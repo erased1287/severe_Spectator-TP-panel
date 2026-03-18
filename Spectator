@@ -1,0 +1,570 @@
+--!nocheck
+-- ================================================================
+--  Severe | Player Panel  (final)
+--  All confirmed working:
+--    - DrawingImmediate for UI
+--    - CameraSubject for spectate (no cam.CFrame writes)
+--    - PostLocal + 10 frames for TP
+--    - Drag with 2px deadzone
+--    - Minimize / restore
+--    - List refreshes every frame
+--    - Click cooldown prevents notification bleed-through
+-- ================================================================
+
+-- ── Services ─────────────────────────────────────────────────────
+local RunService  = game:GetService("RunService")
+local UIS         = game:GetService("UserInputService")
+local Players     = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- ── Layout ───────────────────────────────────────────────────────
+local PW        = 280
+local HEADER_H  = 42
+local TOOLBAR_H = 26
+local ROW_H     = 36
+local FOOTER_H  = 26
+local PAD       = 10
+local BTN_W     = 46
+local BTN_H     = 20
+local PAGE_SIZE = 10  -- players per page
+local pageIndex  = 0   -- current page (0-based)
+
+-- ── Palette ──────────────────────────────────────────────────────
+local C = {
+    bg      = Color3.fromRGB( 10,  12,  18),
+    header  = Color3.fromRGB( 15,  17,  27),
+    toolbar = Color3.fromRGB( 13,  15,  22),
+    footer  = Color3.fromRGB( 13,  15,  22),
+    rowA    = Color3.fromRGB( 14,  16,  23),
+    rowB    = Color3.fromRGB( 18,  20,  30),
+    rowHov  = Color3.fromRGB( 24,  28,  46),
+    rowSpec = Color3.fromRGB( 11,  26,  20),
+    border  = Color3.fromRGB( 34,  40,  64),
+    blue    = Color3.fromRGB( 80, 120, 255),
+    green   = Color3.fromRGB( 48, 188, 115),
+    red     = Color3.fromRGB(195,  52,  52),
+    yellow  = Color3.fromRGB(215, 175,  45),
+    text    = Color3.fromRGB(208, 213, 233),
+    sub     = Color3.fromRGB( 90,  96, 124),
+    dim     = Color3.fromRGB( 44,  50,  72),
+    white   = Color3.fromRGB(255, 255, 255),
+    btnTp   = Color3.fromRGB( 52, 100, 220),
+    btnSpec = Color3.fromRGB( 40, 158, 100),
+    btnStop = Color3.fromRGB(168,  46,  46),
+    btnDis  = Color3.fromRGB( 26,  30,  44),
+    sortAct = Color3.fromRGB( 30,  40,  80),
+}
+
+-- ── Panel state ──────────────────────────────────────────────────
+local panelX    = 40
+local panelY    = 100
+local visible   = true
+local minimized = false
+local dragPhase = 0
+local dragOX    = 0
+local dragOY    = 0
+
+-- ── Mouse state ──────────────────────────────────────────────────
+local mx, my    = 0, 0
+local prevLHeld = false
+local lClicked  = false
+local lReleased = false
+
+-- ── Cooldown ─────────────────────────────────────────────────────
+local clickCooldown = 0
+
+-- ── Player list ──────────────────────────────────────────────────
+local cachedList  = {}
+local sortMode    = 0
+local SORT_LABELS = {"NAME", "DIST"}
+
+-- ── Spectate ─────────────────────────────────────────────────────
+local specPlayer = nil
+
+-- ── TP ───────────────────────────────────────────────────────────
+local tpTarget     = nil
+local tpRoot       = nil
+local tpFramesLeft = 0
+local TP_FRAMES    = 10
+local TP_OFFSET    = 0
+
+-- ── Helpers ──────────────────────────────────────────────────────
+
+local function clamp(v, lo, hi) return math.max(lo, math.min(hi, v)) end
+local function lerp(a, b, t)    return a + (b - a) * t end
+
+local function inRect(px, py, rx, ry, rw, rh)
+    return px >= rx and px <= rx + rw and py >= ry and py <= ry + rh
+end
+
+local function pos3(v)
+    return v.X or v.x or 0,
+           v.Y or v.y or 0,
+           v.Z or v.z or 0
+end
+
+local function mag3(v)
+    local x, y, z = pos3(v)
+    return math.sqrt(x*x + y*y + z*z)
+end
+
+local function distTo(player)
+    local mc = LocalPlayer.Character
+    local tc = player.Character
+    if not mc or not tc then return math.huge end
+    local mr = mc:FindFirstChild("HumanoidRootPart")
+    local tr = tc:FindFirstChild("HumanoidRootPart")
+    if not mr or not tr then return math.huge end
+    return mag3(mr.Position - tr.Position)
+end
+
+local function panelH()
+    return HEADER_H + TOOLBAR_H + PAGE_SIZE * ROW_H + FOOTER_H
+end
+
+local function rowY(i)
+    return panelY + HEADER_H + TOOLBAR_H + (i - 1) * ROW_H
+end
+
+-- ── Player list ──────────────────────────────────────────────────
+
+local function rebuildList()
+    local others = {}
+    for _, p in ipairs(Players:GetChildren()) do
+        if p ~= LocalPlayer then
+            table.insert(others, p)
+        end
+    end
+    if sortMode == 1 then
+        table.sort(others, function(a, b) return distTo(a) < distTo(b) end)
+    else
+        table.sort(others, function(a, b) return a.Name < b.Name end)
+    end
+    table.insert(others, 1, LocalPlayer)
+    cachedList = others
+end
+
+-- ── Spectate ─────────────────────────────────────────────────────
+
+local function stopSpectate()
+    local prev = specPlayer
+    specPlayer = nil
+    local cam   = workspace.CurrentCamera
+    local mChar = LocalPlayer.Character
+    if cam and mChar then
+        local hum = mChar:FindFirstChildOfClass("Humanoid")
+        if hum then cam.CameraSubject = hum end
+    end
+    if prev then
+        send_notification("Stopped spectating " .. prev.Name, "info")
+    end
+end
+
+local function startSpectate(player)
+    if specPlayer then stopSpectate() end
+    local char = player.Character
+    if not char then
+        send_notification("No character: " .. player.Name, "error")
+        return
+    end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then
+        send_notification("No Humanoid: " .. player.Name, "error")
+        return
+    end
+    specPlayer = player
+    local cam = workspace.CurrentCamera
+    if cam then cam.CameraSubject = hum end
+    send_notification("Spectating " .. player.Name, "info")
+end
+
+local function checkSpec()
+    if not specPlayer then return end
+    local char = specPlayer.Character
+    if not char or not char:FindFirstChildOfClass("Humanoid") then
+        stopSpectate()
+    end
+end
+
+-- ── Teleport ─────────────────────────────────────────────────────
+
+local function teleportTo(player)
+    local tc = player.Character
+    local mc = LocalPlayer.Character
+    if not tc or not mc then
+        send_notification("TP failed: no character", "error")
+        return
+    end
+    local tr = tc:FindFirstChild("HumanoidRootPart")
+    local mr = mc:FindFirstChild("HumanoidRootPart")
+    if not tr or not mr then
+        send_notification("TP failed: no RootPart", "error")
+        return
+    end
+    local tp  = tr.Position
+    local tpx, tpy, tpz = pos3(tp)
+    tpTarget     = {x = tpx, y = tpy + TP_OFFSET, z = tpz}
+    tpRoot       = mr
+    tpFramesLeft = TP_FRAMES
+    send_notification("Teleporting to " .. player.Name, "info")
+end
+
+-- Called from PostLocal — matches working reference script pattern
+local function tickTp()
+    if tpFramesLeft <= 0 or not tpRoot or not tpTarget then return end
+    local ok, err = pcall(function()
+        tpRoot.CFrame   = CFrame.new(tpTarget.x, tpTarget.y, tpTarget.z)
+        tpRoot.Velocity = Vector3.new(0, 0, 0)
+    end)
+    if not ok then
+        send_notification("TP error: " .. tostring(err):sub(1, 60), "error")
+        tpFramesLeft = 0
+        tpTarget     = nil
+        tpRoot       = nil
+        return
+    end
+    tpFramesLeft -= 1
+    if tpFramesLeft <= 0 then
+        tpTarget = nil
+        tpRoot   = nil
+    end
+end
+
+-- ── Input ────────────────────────────────────────────────────────
+
+local function pollMouse()
+    local p = UIS:GetMouseLocation()
+    mx, my = p.X, p.Y
+    local lHeld = isleftpressed()
+    lClicked    = lHeld and not prevLHeld
+    lReleased   = not lHeld and prevLHeld
+    prevLHeld   = lHeld
+end
+
+local function handleInput()
+    if not visible then return end
+
+    local ph = minimized and HEADER_H or panelH()
+
+    -- ── Drag ─────────────────────────────────────────────────────
+    local inHeader = inRect(mx, my, panelX, panelY, PW - (BTN_H * 2) - 14, HEADER_H)
+    if lClicked and inHeader then
+        dragPhase = 1
+        dragOX    = mx - panelX
+        dragOY    = my - panelY
+    end
+    if dragPhase == 1 then
+        if math.abs(mx - (panelX + dragOX)) > 2
+        or math.abs(my - (panelY + dragOY)) > 2 then
+            dragPhase = 2
+        end
+    end
+    if dragPhase == 2 and isleftpressed() then
+        local vp  = workspace.CurrentCamera.ViewportSize
+        local vpx = vp.X or vp.x or 1920
+        local vpy = vp.Y or vp.y or 1080
+        panelX = clamp(mx - dragOX, 0, vpx - PW)
+        panelY = clamp(my - dragOY, 0, vpy - 60)
+        return
+    end
+    if lReleased then dragPhase = 0 end
+
+    -- Only process clicks inside the panel
+    if not inRect(mx, my, panelX, panelY, PW, ph) then return end
+    if not lClicked then return end
+    if clickCooldown > 0 then return end
+
+    -- ── Minimize [-] / Restore [+] ───────────────────────────────
+    local minX = panelX + PW - (BTN_H * 2) - 10
+    local minY = panelY + (HEADER_H - BTN_H) / 2
+    if inRect(mx, my, minX, minY, BTN_H, BTN_H) then
+        minimized     = not minimized
+        clickCooldown = 0.2
+        return
+    end
+
+    -- ── Close [x] ────────────────────────────────────────────────
+    local cX = panelX + PW - BTN_H - 6
+    local cY = panelY + (HEADER_H - BTN_H) / 2
+    if inRect(mx, my, cX, cY, BTN_H, BTN_H) then
+        if specPlayer then stopSpectate() end
+        visible       = false
+        clickCooldown = 0.4
+        send_notification("Panel closed", "info")
+        return
+    end
+
+    if minimized then return end
+
+    -- ── Sort ─────────────────────────────────────────────────────
+    local sortY = panelY + HEADER_H + (TOOLBAR_H - 20) / 2
+    if inRect(mx, my, panelX + PAD, sortY, 72, 20) then
+        sortMode      = (sortMode + 1) % 2
+        clickCooldown = 0.3
+        return
+    end
+
+    -- ── Footer: prev/next page + STOP ──────────────────────────────
+    local fy2      = panelY + panelH() - FOOTER_H
+    local total3   = #cachedList
+    local maxPage3 = math.max(0, math.ceil(total3 / PAGE_SIZE) - 1)
+    local prevX2   = panelX + PW - (BTN_H * 2) - 8
+    local nextX2   = panelX + PW - BTN_H - 4
+    local arBY2    = fy2 + (FOOTER_H - BTN_H) / 2
+
+    if inRect(mx, my, prevX2, arBY2, BTN_H, BTN_H) and pageIndex > 0 then
+        pageIndex     = pageIndex - 1
+        clickCooldown = 0.15
+        return
+    end
+    if inRect(mx, my, nextX2, arBY2, BTN_H, BTN_H) and pageIndex < maxPage3 then
+        pageIndex     = pageIndex + 1
+        clickCooldown = 0.15
+        return
+    end
+
+    if specPlayer then
+        local stopX  = panelX + PAD + 4
+        local stopBY = fy2 + (FOOTER_H - BTN_H) / 2
+        if inRect(mx, my, stopX, stopBY, BTN_W, BTN_H) then
+            stopSpectate()
+            clickCooldown = 0.4
+            return
+        end
+    end
+
+    -- ── Row buttons ──────────────────────────────────────────────
+    local total4   = #cachedList
+    local pStart   = pageIndex * PAGE_SIZE + 1
+    local pEnd     = math.min(pStart + PAGE_SIZE - 1, total4)
+    for slot = 1, pEnd - pStart + 1 do
+        local pi2     = pStart + slot - 1
+        local player  = cachedList[pi2]
+        local isLocal = player == LocalPlayer
+        if isLocal then continue end
+
+        local ry   = rowY(slot)
+        local btnY = ry + (ROW_H - BTN_H) / 2
+        local tpX  = panelX + PW - (BTN_W * 2) - PAD - 4
+        local spX  = panelX + PW - BTN_W - PAD
+
+        if inRect(mx, my, tpX, btnY, BTN_W, BTN_H) then
+            teleportTo(player)
+            clickCooldown = 0.4
+            return
+        end
+        if inRect(mx, my, spX, btnY, BTN_W, BTN_H) then
+            if specPlayer == player then stopSpectate()
+            else startSpectate(player) end
+            clickCooldown = 0.4
+            return
+        end
+    end
+end
+
+-- ── Drawing ──────────────────────────────────────────────────────
+
+local DI = DrawingImmediate
+
+local function fRect(x, y, w, h, col, op)
+    DI.FilledRectangle(Vector2.new(x, y), Vector2.new(w, h), col, op or 1)
+end
+local function sRect(x, y, w, h, col, thick, op)
+    DI.Rectangle(Vector2.new(x, y), Vector2.new(w, h), col, op or 1, thick or 1)
+end
+local function lbl(x, y, sz, col, s, center)
+    DI.OutlinedText(Vector2.new(x, y), sz, col, 1, s, center or false, "Tamzen")
+end
+local function btn(x, y, w, h, bg, fg, s)
+    fRect(x, y, w, h, bg)
+    sRect(x, y, w, h, C.border, 1, 0.6)
+    lbl(x + w/2, y + h/2 - 6, 11, fg, s, true)
+end
+local function accentL(x, y, h, col)
+    fRect(x, y, 2, h, col)
+end
+
+local function drawHeader()
+    fRect(panelX, panelY, PW, HEADER_H, C.header)
+    accentL(panelX, panelY, HEADER_H, C.blue)
+    lbl(panelX + PAD + 4,  panelY + 13, 13, C.blue, "SEVERE", false)
+    lbl(panelX + PAD + 57, panelY + 13, 13, C.sub,  "// PLAYERS", false)
+
+    -- Minimize [-] or Restore [+]
+    local minX = panelX + PW - (BTN_H * 2) - 10
+    local minY = panelY + (HEADER_H - BTN_H) / 2
+    btn(minX, minY, BTN_H, BTN_H,
+        inRect(mx, my, minX, minY, BTN_H, BTN_H) and C.blue or C.dim,
+        C.white, minimized and "+" or "-")
+
+    -- Close [x]
+    local cX = panelX + PW - BTN_H - 6
+    local cY = panelY + (HEADER_H - BTN_H) / 2
+    btn(cX, cY, BTN_H, BTN_H,
+        inRect(mx, my, cX, cY, BTN_H, BTN_H) and C.red or C.dim,
+        C.white, "x")
+end
+
+local function drawPanel()
+    local ph    = panelH()
+
+    -- ── Minimized ────────────────────────────────────────────────
+    if minimized then
+        fRect(panelX - 1, panelY - 1, PW + 2, HEADER_H + 2, C.border)
+        fRect(panelX,     panelY,     PW,     HEADER_H,     C.bg)
+        drawHeader()
+        return
+    end
+
+    -- ── Full panel ───────────────────────────────────────────────
+    fRect(panelX - 1, panelY - 1, PW + 2, ph + 2, C.border)
+    fRect(panelX,     panelY,     PW,     ph,     C.bg)
+    drawHeader()
+
+    -- Toolbar
+    local ty = panelY + HEADER_H
+    fRect(panelX, ty, PW, TOOLBAR_H, C.toolbar)
+    sRect(panelX, ty, PW, 1, C.border, 1, 0.4)
+    local sortY  = ty + (TOOLBAR_H - 20) / 2
+    local sHov   = inRect(mx, my, panelX + PAD, sortY, 72, 20)
+    fRect(panelX + PAD, sortY, 72, 20, sHov and C.sortAct or C.dim)
+    sRect(panelX + PAD, sortY, 72, 20, C.border, 1, 0.5)
+    lbl(panelX + PAD + 4,  sortY + 4, 11, C.blue, "SORT:", false)
+    lbl(panelX + PAD + 40, sortY + 4, 11, C.text, SORT_LABELS[sortMode + 1], false)
+
+    -- Rows — show PAGE_SIZE rows from current page
+    local totalPlayers = #cachedList
+    local maxPage      = math.max(0, math.ceil(totalPlayers / PAGE_SIZE) - 1)
+    pageIndex          = clamp(pageIndex, 0, maxPage)
+    local pageStart    = pageIndex * PAGE_SIZE + 1
+    local pageEnd      = math.min(pageStart + PAGE_SIZE - 1, totalPlayers)
+    local pageCount    = pageEnd - pageStart + 1
+
+    for i = 1, pageCount do
+        local pi = pageStart + i - 1
+        local player  = cachedList[pi]
+        local isLocal = player == LocalPlayer
+        local isSpec  = specPlayer == player
+        local ry      = rowY(i)
+        local btnY    = ry + (ROW_H - BTN_H) / 2
+        local isHov   = inRect(mx, my, panelX, ry, PW, ROW_H)
+
+        local bg = (i % 2 == 0) and C.rowA or C.rowB
+        if isSpec then bg = C.rowSpec end
+        if isHov and not isLocal then bg = C.rowHov end
+        fRect(panelX, ry, PW, ROW_H, bg)
+        sRect(panelX, ry, PW, ROW_H, C.border, 1, 0.08)
+        if isSpec then accentL(panelX, ry, ROW_H, C.green) end
+
+        -- Name
+        local name = player.DisplayName or player.Name
+        if #name > 15 then name = name:sub(1, 13) .. ".." end
+        lbl(panelX + PAD + 4, ry + 4,  13,
+            isSpec and C.green or (isLocal and C.blue or C.text),
+            name, false)
+
+        -- Distance / YOU
+        if isLocal then
+            lbl(panelX + PAD + 4, ry + 20, 10, C.blue, "[YOU]", false)
+        else
+            local d  = distTo(player)
+            local ds = d == math.huge and "?" or
+                       (d > 9999 and ">9k" or math.floor(d) .. "m")
+            lbl(panelX + PAD + 4, ry + 20, 10,
+                d < 20 and C.yellow or C.sub, ds, false)
+        end
+
+        -- TP
+        local tpX = panelX + PW - (BTN_W * 2) - PAD - 4
+        local tpH = inRect(mx, my, tpX, btnY, BTN_W, BTN_H)
+        btn(tpX, btnY, BTN_W, BTN_H,
+            isLocal and C.btnDis or (tpH and C.blue or C.btnTp),
+            isLocal and C.sub    or C.white, "TP")
+
+        -- SPEC / STOP
+        local spX = panelX + PW - BTN_W - PAD
+        local spH = inRect(mx, my, spX, btnY, BTN_W, BTN_H)
+        btn(spX, btnY, BTN_W, BTN_H,
+            isLocal  and C.btnDis or
+            (isSpec  and (spH and C.red    or C.btnStop) or
+                         (spH and C.green  or C.btnSpec)),
+            isLocal and C.sub or C.white,
+            isSpec and "STOP" or "SPEC")
+    end
+
+    -- Footer
+    local fy = panelY + ph - FOOTER_H
+    fRect(panelX, fy, PW, FOOTER_H, C.footer)
+    sRect(panelX, fy, PW, 1, C.border, 1, 0.4)
+    accentL(panelX, fy, FOOTER_H, specPlayer and C.green or C.dim)
+
+    -- Prev / Next page buttons
+    local total2   = #cachedList
+    local maxPage2 = math.max(0, math.ceil(total2 / PAGE_SIZE) - 1)
+    local canPrev  = pageIndex > 0
+    local canNext  = pageIndex < maxPage2
+    local prevX    = panelX + PW - (BTN_H * 2) - 8
+    local nextX    = panelX + PW - BTN_H - 4
+    local arBY     = fy + (FOOTER_H - BTN_H) / 2
+    btn(prevX, arBY, BTN_H, BTN_H,
+        canPrev and (inRect(mx, my, prevX, arBY, BTN_H, BTN_H) and C.blue or C.dim) or C.btnDis,
+        canPrev and C.white or C.sub, "<")
+    btn(nextX, arBY, BTN_H, BTN_H,
+        canNext and (inRect(mx, my, nextX, arBY, BTN_H, BTN_H) and C.blue or C.dim) or C.btnDis,
+        canNext and C.white or C.sub, ">")
+
+    -- Page indicator
+    lbl(panelX + PW - (BTN_H * 2) - 38, fy + 7, 10, C.sub,
+        (pageIndex + 1) .. "/" .. (maxPage2 + 1), false)
+
+    if specPlayer then
+        lbl(panelX + PAD + 4, fy + 7, 11, C.green,
+            "SPEC: " .. specPlayer.Name:upper(), false)
+    else
+        lbl(panelX + PAD + 4, fy + 7, 11, C.sub, "IDLE", false)
+    end
+
+    -- Spectate HUD
+    if specPlayer then
+        local vp  = workspace.CurrentCamera.ViewportSize
+        local vpx = vp.X or vp.x or 1920
+        local hw  = 260
+        local hx  = vpx / 2 - hw / 2
+        fRect(hx - 1, 27, hw + 2, 28, C.border)
+        fRect(hx,     28, hw,     26, C.header)
+        accentL(hx, 28, 26, C.green)
+        lbl(vpx / 2, 33, 12, C.green,
+            "SPECTATING " .. specPlayer.Name:upper() ..
+            "  |  " .. math.floor(distTo(specPlayer)) .. "m away",
+            true)
+    end
+end
+
+-- ── PostLocal: TP writes ──────────────────────────────────────────
+RunService.PostLocal:Connect(function()
+    tickTp()
+end)
+
+-- ── Render: everything else ───────────────────────────────────────
+local checkTimer = 0
+
+RunService.Render:Connect(function(dt)
+    pollMouse()
+    if clickCooldown > 0 then clickCooldown -= dt end
+    if not visible then return end
+
+    rebuildList()
+
+    checkTimer += dt
+    if checkTimer >= 0.5 then
+        checkTimer = 0
+        checkSpec()
+    end
+
+    pcall(handleInput)
+    pcall(drawPanel)
+end)
+
+-- ── Init ─────────────────────────────────────────────────────────
+rebuildList()
+send_notification("Player panel ready", "info")
