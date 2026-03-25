@@ -26,7 +26,7 @@ local FOOTER_H  = 26
 local PAD       = 10
 local BTN_W     = 46
 local BTN_H     = 20
-local PAGE_SIZE = 10  -- players per page
+local PAGE_SIZE = 100  -- players per page
 local pageIndex  = 0   -- current page (0-based)
 
 -- ── Palette ──────────────────────────────────────────────────────
