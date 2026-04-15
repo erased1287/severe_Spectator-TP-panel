@@ -4,7 +4,7 @@
 --  All confirmed working:
 --    - DrawingImmediate for UI
 --    - CameraSubject for spectate (no cam.CFrame writes)
---    - PostLocal + 10 frames for TP
+--    - Render loop + 10 frames for TP
 --    - Drag with 2px deadzone
 --    - Minimize / restore
 --    - List refreshes every frame
@@ -26,7 +26,7 @@ local FOOTER_H  = 26
 local PAD       = 10
 local BTN_W     = 46
 local BTN_H     = 20
-local PAGE_SIZE = 100  -- players per page
+local PAGE_SIZE = 10  -- players per page
 local pageIndex  = 0   -- current page (0-based)
 
 -- ── Palette ──────────────────────────────────────────────────────
@@ -209,7 +209,8 @@ local function teleportTo(player)
     send_notification("Teleporting to " .. player.Name, "info")
 end
 
--- Called from PostLocal — matches working reference script pattern
+-- Called from Render loop every frame
+local tpDebugSent = false
 local function tickTp()
     if tpFramesLeft <= 0 or not tpRoot or not tpTarget then return end
     local ok, err = pcall(function()
@@ -221,12 +222,19 @@ local function tickTp()
         tpFramesLeft = 0
         tpTarget     = nil
         tpRoot       = nil
+        tpDebugSent  = false
         return
+    end
+    -- Debug: confirm write fired on first frame
+    if not tpDebugSent then
+        tpDebugSent = true
+        send_notification("TP write OK at "..math.floor(tpTarget.x)..","..math.floor(tpTarget.y)..","..math.floor(tpTarget.z), "info")
     end
     tpFramesLeft -= 1
     if tpFramesLeft <= 0 then
-        tpTarget = nil
-        tpRoot   = nil
+        tpTarget     = nil
+        tpRoot       = nil
+        tpDebugSent  = false
     end
 end
 
@@ -540,11 +548,6 @@ local function drawPanel()
     end
 end
 
--- ── PostLocal: TP writes ──────────────────────────────────────────
-RunService.PostLocal:Connect(function()
-    tickTp()
-end)
-
 -- ── Render: everything else ───────────────────────────────────────
 local checkTimer = 0
 
@@ -561,6 +564,7 @@ RunService.Render:Connect(function(dt)
         checkSpec()
     end
 
+    tickTp()
     pcall(handleInput)
     pcall(drawPanel)
 end)
