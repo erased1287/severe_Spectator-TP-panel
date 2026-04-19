@@ -200,7 +200,6 @@ local dragPh      = 0
 local dragOX, dragOY = 0, 0
 
 local iconX, iconY = Settings.iconX, Settings.iconY
-local iconInit    = false
 local icoDrag     = false
 local icoDX, icoDY = 0, 0
 
@@ -465,38 +464,70 @@ local function enableAntiAFK()
         F.afkConn=nil
     end)
 end
+-- Instant Interact: zero hold duration on all ProximityPrompts
+-- Uses a cached set + DescendantAdded connection to avoid scanning every frame
+local iiConn = nil   -- DescendantAdded connection
+
+local function applyII(obj)
+    if obj.ClassName ~= "ProximityPrompt" then return end
+    pcall(function()
+        if F.iiOffset then memory.writef32(obj, F.iiOffset, 0)
+        else obj.HoldDuration = 0 end
+    end)
+end
+
 local function enableInstantInteract()
     if F.iiLoop then return end
     task.spawn(function()
-        local offset=nil
+        -- fetch offset once
+        local offset = nil
         pcall(function()
-            local ok,res=pcall(function() return game:HttpGet("https://offsets.ntgetwritewatch.workers.dev/offsets.json") end)
+            local ok,res = pcall(function()
+                return game:HttpGet("https://offsets.ntgetwritewatch.workers.dev/offsets.json")
+            end)
             if ok and res then
-                local data=crypt.json.decode(res)
+                local data = crypt.json.decode(res)
                 if data and data.ProximityPromptHoldDuraction then
-                    offset=tonumber(data.ProximityPromptHoldDuraction,16)
+                    offset = tonumber(data.ProximityPromptHoldDuraction, 16)
                 end
             end
         end)
-        F.iiOffset=offset
-        if offset then notify("Instant Interact ON (mem)")
-        else notify("Instant Interact ON (prop)") end
-        F.iiLoop=true
+        F.iiOffset = offset
+        if offset then notify("Instant Interact ON") else notify("Instant Interact ON") end
+
+        -- apply once to all existing prompts
+        pcall(function()
+            for _,obj in ipairs(game:GetDescendants()) do
+                applyII(obj)
+            end
+        end)
+
+        -- watch for new prompts appearing (no polling loop needed)
+        if iiConn then pcall(function() iiConn:Disconnect() end) end
+        iiConn = game.DescendantAdded:Connect(function(obj)
+            if not F.iiLoop then return end
+            task.defer(function() applyII(obj) end)
+        end)
+
+        -- light maintenance loop: re-apply every 5s in case game resets values
+        F.iiLoop = true
         while F.iiLoop do
+            task.wait(5)
+            if not F.iiLoop then break end
             pcall(function()
                 for _,obj in ipairs(game:GetDescendants()) do
-                    if obj.ClassName=="ProximityPrompt" then
-                        if F.iiOffset then pcall(function() memory.writef32(obj,F.iiOffset,0) end)
-                        else pcall(function() obj.HoldDuration=0 end) end
-                    end
+                    applyII(obj)
                 end
             end)
-            task.wait(0.1)
         end
     end)
 end
+
 local function disableInstantInteract()
-    F.iiLoop=false; F.iiOffset=nil; notify("Instant Interact OFF")
+    F.iiLoop = false
+    F.iiOffset = nil
+    if iiConn then pcall(function() iiConn:Disconnect() end); iiConn = nil end
+    notify("Instant Interact OFF")
 end
 local function doForceReset()
     local c=LocalPlayer.Character; if not c then notify("No character") return end
@@ -847,11 +878,13 @@ end
 -- ICON BUTTON
 -- ============================================================
 local function initIcon()
-    if iconInit then return end
+    -- resolve default position every time until valid coords are set
     local vpx,vpy=getVP()
-    if iconX==-1 or iconX==0 then iconX=vpx-ICO_W-14 end
-    if iconY==-1 or iconY==0 then iconY=vpy-ICO_H-14 end
-    iconInit=true
+    if iconX<=0 then iconX=vpx-ICO_W-14 end
+    if iconY<=0 then iconY=vpy-ICO_H-14 end
+    -- clamp in case viewport changed
+    iconX=clamp(iconX,0,vpx-ICO_W)
+    iconY=clamp(iconY,0,vpy-ICO_H)
 end
 
 local function drawIcon()
