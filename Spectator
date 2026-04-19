@@ -1,91 +1,126 @@
 --!nocheck
--- Severe Player Panel v5
--- Close button shrinks panel to draggable icon in bottom-right corner
--- Click icon to restore full panel
--- OPT panel is fully draggable
--- NEW FEATURES: Anti-Void, Anti-AFK, Instant Interact
+-- Severe Player Panel v6
+-- Theme panel: draggable
+-- Server Info: copy buttons per row, no Copy UID in OPT
+-- Settings save: feature toggle states persist across sessions
+-- Cleaner UI: tighter spacing, pill toggles, consistent rows
 
 local RunService  = game:GetService("RunService")
 local UIS         = game:GetService("UserInputService")
 local Players     = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- safe single-arg notify
 local function notify(msg)
     pcall(function() send_notification(tostring(msg)) end)
 end
 
--- =============================================================
+-- ============================================================
 -- THEME
--- =============================================================
+-- ============================================================
 local T = {
-    bg0  = Color3.fromRGB(  9,  9, 14),
-    bg1  = Color3.fromRGB( 14, 14, 22),
-    bg2  = Color3.fromRGB( 20, 20, 32),
-    bg3  = Color3.fromRGB( 26, 26, 40),
-    bg4  = Color3.fromRGB( 34, 34, 52),
-    line = Color3.fromRGB( 42, 42, 64),
-    brdr = Color3.fromRGB( 58, 58, 88),
+    bg0  = Color3.fromRGB(  8,  8, 13),
+    bg1  = Color3.fromRGB( 13, 13, 21),
+    bg2  = Color3.fromRGB( 19, 19, 30),
+    bg3  = Color3.fromRGB( 25, 25, 39),
+    bg4  = Color3.fromRGB( 33, 33, 51),
+    line = Color3.fromRGB( 40, 40, 62),
+    brdr = Color3.fromRGB( 54, 54, 84),
     acc  = Color3.fromRGB( 99, 88,255),
     accS = Color3.fromRGB(130,120,255),
-    accD = Color3.fromRGB( 66, 58,180),
-    ok   = Color3.fromRGB( 60,200,110),
-    warn = Color3.fromRGB(235,175, 50),
-    err  = Color3.fromRGB(215, 70, 70),
-    tele = Color3.fromRGB(255,130, 80),
-    vis  = Color3.fromRGB(160,110,255),
-    move = Color3.fromRGB( 70,170,255),
-    util = Color3.fromRGB( 60,210,165),
-    t0   = Color3.fromRGB(240,240,250),
-    t1   = Color3.fromRGB(160,162,185),
-    t2   = Color3.fromRGB( 90, 92,115),
+    accD = Color3.fromRGB( 60, 52,175),
+    ok   = Color3.fromRGB( 55,195,105),
+    warn = Color3.fromRGB(230,170, 45),
+    err  = Color3.fromRGB(210, 65, 65),
+    tele = Color3.fromRGB(255,125, 75),
+    vis  = Color3.fromRGB(155,105,250),
+    move = Color3.fromRGB( 65,165,255),
+    util = Color3.fromRGB( 55,205,160),
+    t0   = Color3.fromRGB(235,235,248),
+    t1   = Color3.fromRGB(150,153,178),
+    t2   = Color3.fromRGB( 80, 83,108),
     wht  = Color3.fromRGB(255,255,255),
     blk  = Color3.fromRGB(  0,  0,  0),
 }
 
 local AccPre = {
-    {n="Indigo",  a=Color3.fromRGB( 99, 88,255),s=Color3.fromRGB(130,120,255),d=Color3.fromRGB( 66, 58,180)},
-    {n="Violet",  a=Color3.fromRGB(162, 55,255),s=Color3.fromRGB(190,100,255),d=Color3.fromRGB(110, 30,190)},
-    {n="Cyan",    a=Color3.fromRGB( 30,200,220),s=Color3.fromRGB( 90,225,240),d=Color3.fromRGB( 15,145,165)},
-    {n="Emerald", a=Color3.fromRGB( 40,205,120),s=Color3.fromRGB( 90,230,155),d=Color3.fromRGB( 20,145, 80)},
-    {n="Rose",    a=Color3.fromRGB(240, 65,110),s=Color3.fromRGB(255,110,145),d=Color3.fromRGB(180, 35, 75)},
-    {n="Amber",   a=Color3.fromRGB(230,165, 30),s=Color3.fromRGB(250,195, 80),d=Color3.fromRGB(175,120, 15)},
-    {n="Sky",     a=Color3.fromRGB( 55,150,255),s=Color3.fromRGB(100,180,255),d=Color3.fromRGB( 30,100,200)},
-    {n="Crimson", a=Color3.fromRGB(220, 50, 70),s=Color3.fromRGB(255, 90,110),d=Color3.fromRGB(160, 30, 50)},
-    {n="Lime",    a=Color3.fromRGB(130,220, 40),s=Color3.fromRGB(168,240, 88),d=Color3.fromRGB( 88,162, 18)},
-    {n="Orange",  a=Color3.fromRGB(245,120, 30),s=Color3.fromRGB(255,158, 80),d=Color3.fromRGB(190, 80, 10)},
+    {n="Indigo",  a=Color3.fromRGB( 99, 88,255),s=Color3.fromRGB(130,120,255),d=Color3.fromRGB( 60, 52,175)},
+    {n="Violet",  a=Color3.fromRGB(158, 50,250),s=Color3.fromRGB(190, 98,255),d=Color3.fromRGB(108, 28,185)},
+    {n="Cyan",    a=Color3.fromRGB( 28,195,215),s=Color3.fromRGB( 85,222,238),d=Color3.fromRGB( 14,140,160)},
+    {n="Emerald", a=Color3.fromRGB( 38,200,115),s=Color3.fromRGB( 85,228,152),d=Color3.fromRGB( 18,140, 76)},
+    {n="Rose",    a=Color3.fromRGB(238, 62,108),s=Color3.fromRGB(255,108,142),d=Color3.fromRGB(178, 33, 73)},
+    {n="Amber",   a=Color3.fromRGB(228,162, 28),s=Color3.fromRGB(248,193, 75),d=Color3.fromRGB(172,118, 14)},
+    {n="Sky",     a=Color3.fromRGB( 52,148,255),s=Color3.fromRGB( 96,177,255),d=Color3.fromRGB( 28, 98,198)},
+    {n="Crimson", a=Color3.fromRGB(218, 48, 68),s=Color3.fromRGB(252, 88,108),d=Color3.fromRGB(158, 28, 48)},
+    {n="Lime",    a=Color3.fromRGB(128,218, 38),s=Color3.fromRGB(165,238, 85),d=Color3.fromRGB( 85,158, 16)},
+    {n="Orange",  a=Color3.fromRGB(242,118, 28),s=Color3.fromRGB(255,155, 78),d=Color3.fromRGB(188, 78,  8)},
 }
 
 local BgPre = {
-    {n="Void",   b0=Color3.fromRGB(  9,  9, 14),b1=Color3.fromRGB( 14, 14, 22),b2=Color3.fromRGB( 20, 20, 32),b3=Color3.fromRGB( 26, 26, 40),b4=Color3.fromRGB( 34, 34, 52),li=Color3.fromRGB(42,42,64),br=Color3.fromRGB(58,58,88)},
-    {n="Onyx",   b0=Color3.fromRGB(  7,  7,  9),b1=Color3.fromRGB( 12, 12, 14),b2=Color3.fromRGB( 18, 18, 22),b3=Color3.fromRGB( 24, 24, 28),b4=Color3.fromRGB( 32, 32, 38),li=Color3.fromRGB(40,40,48),br=Color3.fromRGB(55,55,65)},
-    {n="Slate",  b0=Color3.fromRGB( 10, 14, 22),b1=Color3.fromRGB( 15, 20, 32),b2=Color3.fromRGB( 22, 28, 44),b3=Color3.fromRGB( 28, 36, 55),b4=Color3.fromRGB( 36, 46, 70),li=Color3.fromRGB(44,55,80),br=Color3.fromRGB(60,72,105)},
-    {n="Carbon", b0=Color3.fromRGB( 10, 10, 10),b1=Color3.fromRGB( 16, 16, 16),b2=Color3.fromRGB( 22, 22, 22),b3=Color3.fromRGB( 30, 30, 30),b4=Color3.fromRGB( 40, 40, 40),li=Color3.fromRGB(50,50,50),br=Color3.fromRGB(68,68,68)},
-    {n="Abyss",  b0=Color3.fromRGB(  6,  6, 12),b1=Color3.fromRGB( 10, 10, 18),b2=Color3.fromRGB( 14, 14, 26),b3=Color3.fromRGB( 18, 18, 32),b4=Color3.fromRGB( 24, 24, 42),li=Color3.fromRGB(32,32,56),br=Color3.fromRGB(46,46,74)},
-    {n="Blood",  b0=Color3.fromRGB( 14,  7,  7),b1=Color3.fromRGB( 22, 11, 11),b2=Color3.fromRGB( 32, 16, 16),b3=Color3.fromRGB( 40, 20, 20),b4=Color3.fromRGB( 52, 26, 26),li=Color3.fromRGB(62,30,30),br=Color3.fromRGB(84,40,40)},
+    {n="Void",   b0=Color3.fromRGB(  8,  8, 13),b1=Color3.fromRGB( 13, 13, 21),b2=Color3.fromRGB( 19, 19, 30),b3=Color3.fromRGB( 25, 25, 39),b4=Color3.fromRGB( 33, 33, 51),li=Color3.fromRGB(40,40,62), br=Color3.fromRGB(54,54,84)},
+    {n="Onyx",   b0=Color3.fromRGB(  6,  6,  8),b1=Color3.fromRGB( 11, 11, 13),b2=Color3.fromRGB( 17, 17, 20),b3=Color3.fromRGB( 23, 23, 27),b4=Color3.fromRGB( 31, 31, 36),li=Color3.fromRGB(38,38,45), br=Color3.fromRGB(52,52,62)},
+    {n="Slate",  b0=Color3.fromRGB(  9, 13, 21),b1=Color3.fromRGB( 14, 19, 31),b2=Color3.fromRGB( 21, 27, 43),b3=Color3.fromRGB( 27, 35, 54),b4=Color3.fromRGB( 35, 45, 69),li=Color3.fromRGB(42,54,79), br=Color3.fromRGB(58,70,104)},
+    {n="Carbon", b0=Color3.fromRGB(  9,  9,  9),b1=Color3.fromRGB( 15, 15, 15),b2=Color3.fromRGB( 21, 21, 21),b3=Color3.fromRGB( 28, 28, 28),b4=Color3.fromRGB( 38, 38, 38),li=Color3.fromRGB(48,48,48), br=Color3.fromRGB(65,65,65)},
+    {n="Abyss",  b0=Color3.fromRGB(  5,  5, 11),b1=Color3.fromRGB(  9,  9, 17),b2=Color3.fromRGB( 13, 13, 25),b3=Color3.fromRGB( 17, 17, 31),b4=Color3.fromRGB( 23, 23, 41),li=Color3.fromRGB(30,30,54), br=Color3.fromRGB(43,43,71)},
+    {n="Blood",  b0=Color3.fromRGB( 13,  6,  6),b1=Color3.fromRGB( 21, 10, 10),b2=Color3.fromRGB( 31, 15, 15),b3=Color3.fromRGB( 39, 19, 19),b4=Color3.fromRGB( 50, 25, 25),li=Color3.fromRGB(60,29,29), br=Color3.fromRGB(80,38,38)},
 }
 
-local SAVE_FILE = "severe_panel_v5.json"
+-- ============================================================
+-- SAVE / LOAD  (theme + settings + positions)
+-- ============================================================
+local SAVE_FILE = "severe_panel_v6.json"
 
-local function saveTheme()
+local Settings = {
+    diedTp     = false,
+    thirdP     = false,
+    antiVoid   = false,
+    antiAFK    = false,
+    instantInt = false,
+    spamFling  = false,
+    sustained  = false,
+    spamDelay  = 2.0,
+    sortMode   = 0,
+    -- panel positions
+    pX = 44, pY = 90,
+    iconX = -1, iconY = -1,  -- -1 = use default (bottom-right)
+    optX = 0,  optY = 0,
+    thmX = 0,  thmY = 0,
+}
+
+local function saveAll(extraTheme)
     pcall(function()
         local d = {
-            a ={T.acc.R, T.acc.G, T.acc.B},
-            aS={T.accS.R,T.accS.G,T.accS.B},
-            aD={T.accD.R,T.accD.G,T.accD.B},
-            b0={T.bg0.R, T.bg0.G, T.bg0.B},
-            b1={T.bg1.R, T.bg1.G, T.bg1.B},
-            b2={T.bg2.R, T.bg2.G, T.bg2.B},
-            b3={T.bg3.R, T.bg3.G, T.bg3.B},
-            b4={T.bg4.R, T.bg4.G, T.bg4.B},
-            li={T.line.R,T.line.G,T.line.B},
-            br={T.brdr.R,T.brdr.G,T.brdr.B},
+            -- theme
+            a  = {T.acc.R,  T.acc.G,  T.acc.B},
+            aS = {T.accS.R, T.accS.G, T.accS.B},
+            aD = {T.accD.R, T.accD.G, T.accD.B},
+            b0 = {T.bg0.R,  T.bg0.G,  T.bg0.B},
+            b1 = {T.bg1.R,  T.bg1.G,  T.bg1.B},
+            b2 = {T.bg2.R,  T.bg2.G,  T.bg2.B},
+            b3 = {T.bg3.R,  T.bg3.G,  T.bg3.B},
+            b4 = {T.bg4.R,  T.bg4.G,  T.bg4.B},
+            li = {T.line.R, T.line.G, T.line.B},
+            br = {T.brdr.R, T.brdr.G, T.brdr.B},
+            -- settings
+            diedTp     = Settings.diedTp,
+            thirdP     = Settings.thirdP,
+            antiVoid   = Settings.antiVoid,
+            antiAFK    = Settings.antiAFK,
+            instantInt = Settings.instantInt,
+            spamFling  = Settings.spamFling,
+            sustained  = Settings.sustained,
+            spamDelay  = Settings.spamDelay,
+            sortMode   = Settings.sortMode,
+            -- positions
+            pX   = Settings.pX,   pY   = Settings.pY,
+            iX   = Settings.iconX, iY  = Settings.iconY,
+            oX   = Settings.optX,  oY  = Settings.optY,
+            tX   = Settings.thmX,  tY  = Settings.thmY,
         }
         writefile(SAVE_FILE, crypt.json.encode(d))
     end)
 end
 
-local function loadTheme()
+local function loadAll()
     pcall(function()
         local raw = readfile(SAVE_FILE)
         if not raw then return end
@@ -102,450 +137,357 @@ local function loadTheme()
         if d.b4 then T.bg4 =c(d.b4) end
         if d.li then T.line=c(d.li)  end
         if d.br then T.brdr=c(d.br)  end
+        if d.diedTp     ~= nil then Settings.diedTp     = d.diedTp     end
+        if d.thirdP     ~= nil then Settings.thirdP     = d.thirdP     end
+        if d.antiVoid   ~= nil then Settings.antiVoid   = d.antiVoid   end
+        if d.antiAFK    ~= nil then Settings.antiAFK    = d.antiAFK    end
+        if d.instantInt ~= nil then Settings.instantInt = d.instantInt end
+        if d.spamFling  ~= nil then Settings.spamFling  = d.spamFling  end
+        if d.sustained  ~= nil then Settings.sustained  = d.sustained  end
+        if d.spamDelay  ~= nil then Settings.spamDelay  = d.spamDelay  end
+        if d.sortMode   ~= nil then Settings.sortMode   = d.sortMode   end
+        if d.pX ~= nil then Settings.pX = d.pX end
+        if d.pY ~= nil then Settings.pY = d.pY end
+        if d.iX ~= nil then Settings.iconX = d.iX end
+        if d.iY ~= nil then Settings.iconY = d.iY end
+        if d.oX ~= nil then Settings.optX  = d.oX end
+        if d.oY ~= nil then Settings.optY  = d.oY end
+        if d.tX ~= nil then Settings.thmX  = d.tX end
+        if d.tY ~= nil then Settings.thmY  = d.tY end
     end)
 end
 
--- =============================================================
+-- ============================================================
 -- LAYOUT
--- =============================================================
-local PW       = 358
-local HDR_H    = 54
-local TOOL_H   = 30
-local ROW_H    = 44
-local FOOT_H   = 30
-local PAD      = 12
-local PAGE     = 8
-local BTN_W    = 46
-local BTN_H    = 22
-local IR       = 3
+-- ============================================================
+local PW      = 352
+local HDR_H   = 50
+local TOOL_H  = 28
+local ROW_H   = 42
+local FOOT_H  = 28
+local PAD     = 11
+local PAGE    = 8
+local BTN_H   = 20
+local BTN_W   = 44
+local IR      = 3   -- accent rail
 
--- row 3-button strip
-local RBW      = 42
-local RBG      = 3
-local RB1_OFF  = PW - PAD - RBW*3 - RBG*2
+local RBW     = 40   -- row button width
+local RBG     = 3
+local RB1_OFF = PW - PAD - RBW*3 - RBG*2
 
--- options panel
-local OW       = 430
-local OH       = 0
-local O_HDR    = 50
-local O_ROW    = 54
-local O_GAP    = 6
-local O_SEC    = 22
+local OW      = 420
+local OH      = 0
+local O_HDR   = 48
+local O_ROW   = 50
+local O_GAP   = 5
+local O_SEC   = 20
 
--- icon button (minimized state)
-local ICO_W    = 44
-local ICO_H    = 44
+local ICO_W   = 42
+local ICO_H   = 42
 
--- fling
-local F_QVEL   = 14000
-local F_SVEL   =  9000
-local F_QF     = 30
-local F_SF     = 90
-local F_RF     = 12
+local F_QVEL  = 14000
+local F_SVEL  =  9000
+local F_QF    = 30
+local F_SF    = 90
+local F_RF    = 12
 
--- =============================================================
--- STATE
--- =============================================================
-local pX, pY    = 44, 90
-local iconX, iconY = 0, 0   -- set at init after VP known
-local iconInit  = false
-local panelOpen = true       -- true = full panel, false = icon only
-
-local dragPh    = 0
+-- ============================================================
+-- RUNTIME STATE
+-- ============================================================
+local pX, pY      = Settings.pX, Settings.pY
+local panelOpen   = true
+local dragPh      = 0
 local dragOX, dragOY = 0, 0
 
--- icon drag
-local icoDrag   = false
+local iconX, iconY = Settings.iconX, Settings.iconY
+local iconInit    = false
+local icoDrag     = false
 local icoDX, icoDY = 0, 0
 
-local optOpen   = false
-local optX, optY = 0, 0
-local optDrag   = false
+local optOpen     = false
+local optX, optY  = Settings.optX, Settings.optY
+local optDrag     = false
 local optDX, optDY = 0, 0
-local optEls    = {}
-local optClose  = nil
-local optHdr    = nil
-local optTog    = {}
-local optBtn    = {}
+local optEls      = {}
+local optClose    = nil
+local optHdr      = nil
+local optTog      = {}
+local optBtn      = {}
 
-local thmOpen   = false
-local thmEls    = {}
-local thmAcc    = {}
-local thmBg     = {}
-local thmClose  = nil
+local thmOpen     = false
+local thmX, thmY  = Settings.thmX, Settings.thmY
+local thmDrag     = false
+local thmDX, thmDY = 0, 0
+local thmEls      = {}
+local thmAcc      = {}
+local thmBg       = {}
+local thmClose    = nil
+local thmHdr      = nil
 
-local siOpen    = false
-local siEls     = {}
-local siClose   = nil
-local siMain    = nil
+local siOpen      = false
+local siEls       = {}
+local siClose     = nil
+local siMain      = nil
+local siCopyBtns  = {}
 
-local mx, my    = 0, 0
-local prevL     = false
-local lClick    = false
-local lRel      = false
-local clickCd   = 0
+local mx, my      = 0, 0
+local prevL       = false
+local lClick      = false
+local lRel        = false
+local clickCd     = 0
 
-local list      = {}
-local sortMode  = 0
-local pageIdx   = 0
-local specP     = nil
+local list        = {}
+local sortMode    = Settings.sortMode
+local pageIdx     = 0
+local specP       = nil
 
 local tpTgt, tpRoot = nil, nil
-local tpFr      = 0
+local tpFr        = 0
 
-local fPhase    = "idle"
-local fFrames   = 0
-local fTarget   = ""
-local fSaved    = nil
+local fPhase      = "idle"
+local fFrames     = 0
+local fTarget     = ""
+local fSaved      = nil
 
 local F = {
-    -- DiedTP
-    diedTp      = false,
+    diedTp      = Settings.diedTp,
     dLastPos    = nil,
     dDeathPos   = nil,
     dWasDead    = false,
     dWasAlive   = true,
     dCooldown   = 0,
-    -- Third person
-    thirdP      = false,
+    thirdP      = Settings.thirdP,
     tDist       = 12,
     tHeight     = 2,
-    -- Spam fling
-    spamFling   = false,
-    spamDelay   = 2.0,
-    spamLast    = 0,
-    spamTarget  = "",
-    -- Sustained fling
-    sustained   = false,
-    -- Anti-void
-    antiVoid    = false,
+    antiVoid    = Settings.antiVoid,
     avThresh    = -150,
     avCooldown  = 0,
     avSpawn     = nil,
-    -- Anti-AFK
-    antiAFK     = false,
+    antiAFK     = Settings.antiAFK,
     afkConn     = nil,
-    -- Instant interact
-    instantInt  = false,
+    instantInt  = Settings.instantInt,
     iiOffset    = nil,
     iiLoop      = nil,
+    spamFling   = Settings.spamFling,
+    spamDelay   = Settings.spamDelay,
+    spamLast    = 0,
+    spamTarget  = "",
+    sustained   = Settings.sustained,
 }
 
--- =============================================================
+-- ============================================================
 -- HELPERS
--- =============================================================
+-- ============================================================
 local function clamp(v,lo,hi) return math.max(lo,math.min(hi,v)) end
-
 local function inR(px2,py2,rx,ry,rw,rh)
     return px2>=rx and px2<=rx+rw and py2>=ry and py2<=ry+rh
 end
-
 local function getVP()
     local cam = workspace.CurrentCamera
     if not cam then return 1920,1080 end
     local v = cam.ViewportSize
     return v.X or 1920, v.Y or 1080
 end
-
 local function distTo(p)
-    local mc = LocalPlayer.Character
-    local tc = p.Character
+    local mc=LocalPlayer.Character; local tc=p.Character
     if not mc or not tc then return math.huge end
-    local mr = mc:FindFirstChild("HumanoidRootPart")
-    local tr = tc:FindFirstChild("HumanoidRootPart")
+    local mr=mc:FindFirstChild("HumanoidRootPart"); local tr=tc:FindFirstChild("HumanoidRootPart")
     if not mr or not tr then return math.huge end
-    local d = mr.Position - tr.Position
-    return math.sqrt(d.X*d.X + d.Y*d.Y + d.Z*d.Z)
+    local d=mr.Position-tr.Position; return math.sqrt(d.X*d.X+d.Y*d.Y+d.Z*d.Z)
 end
-
 local function getHP(p)
-    local c = p.Character
-    if not c then return 0,100 end
-    local h = c:FindFirstChildOfClass("Humanoid")
-    if not h then return 0,100 end
-    return h.Health, h.MaxHealth
+    local c=p.Character; if not c then return 0,100 end
+    local h=c:FindFirstChildOfClass("Humanoid"); if not h then return 0,100 end
+    return h.Health,h.MaxHealth
 end
-
 local function getHRP()
-    local c = LocalPlayer.Character
-    return c and c:FindFirstChild("HumanoidRootPart")
+    local c=LocalPlayer.Character; return c and c:FindFirstChild("HumanoidRootPart")
 end
-
 local function findP(name)
-    if not name or name == "" then return nil end
-    local q = name:lower()
-    for _,p in Players:GetChildren() do
-        if p ~= LocalPlayer then
-            local ok1,n  = pcall(function() return p.Name end)
-            local ok2,dn = pcall(function() return p.DisplayName end)
-            if (ok1 and n:lower()==q) or (ok2 and dn:lower()==q) then return p end
-        end
-    end
-    for _,p in Players:GetChildren() do
-        if p ~= LocalPlayer then
-            local ok1,n  = pcall(function() return p.Name end)
-            local ok2,dn = pcall(function() return p.DisplayName end)
-            if (ok1 and n:lower():sub(1,#q)==q) or (ok2 and dn:lower():sub(1,#q)==q) then return p end
-        end
-    end
+    if not name or name=="" then return nil end
+    local q=name:lower()
+    for _,p in Players:GetChildren() do if p~=LocalPlayer then
+        local ok1,n=pcall(function() return p.Name end)
+        local ok2,dn=pcall(function() return p.DisplayName end)
+        if (ok1 and n:lower()==q) or (ok2 and dn:lower()==q) then return p end
+    end end
+    for _,p in Players:GetChildren() do if p~=LocalPlayer then
+        local ok1,n=pcall(function() return p.Name end)
+        local ok2,dn=pcall(function() return p.DisplayName end)
+        if (ok1 and n:lower():sub(1,#q)==q) or (ok2 and dn:lower():sub(1,#q)==q) then return p end
+    end end
     return nil
 end
-
 local function panelH() return HDR_H+TOOL_H+PAGE*ROW_H+FOOT_H end
 local function rowY(i)  return pY+HDR_H+TOOL_H+(i-1)*ROW_H end
-
 local function getSpawn()
     if F.avSpawn then return F.avSpawn end
-    local pos = Vector3.new(0,50,0)
+    local pos=Vector3.new(0,50,0)
     pcall(function()
-        local s = workspace:FindFirstChildOfClass("SpawnLocation")
-        if not s then
-            for _,v in workspace:GetDescendants() do
-                if v:IsA("SpawnLocation") then s=v break end
-            end
-        end
-        if s then pos = s.Position + Vector3.new(0,3,0) end
+        local s=workspace:FindFirstChildOfClass("SpawnLocation")
+        if not s then for _,v in workspace:GetDescendants() do if v:IsA("SpawnLocation") then s=v break end end end
+        if s then pos=s.Position+Vector3.new(0,3,0) end
     end)
-    F.avSpawn = pos
-    return pos
+    F.avSpawn=pos; return pos
 end
 
--- =============================================================
+-- ============================================================
 -- PLAYER LIST
--- =============================================================
+-- ============================================================
 local function buildList()
-    local others = {}
-    for _,p in ipairs(Players:GetChildren()) do
-        if p ~= LocalPlayer then table.insert(others,p) end
-    end
-    if sortMode == 1 then
-        table.sort(others, function(a,b) return distTo(a)<distTo(b) end)
-    else
-        table.sort(others, function(a,b) return a.Name<b.Name end)
-    end
-    table.insert(others,1,LocalPlayer)
-    list = others
+    local others={}
+    for _,p in ipairs(Players:GetChildren()) do if p~=LocalPlayer then table.insert(others,p) end end
+    if sortMode==1 then table.sort(others,function(a,b) return distTo(a)<distTo(b) end)
+    else table.sort(others,function(a,b) return a.Name<b.Name end) end
+    table.insert(others,1,LocalPlayer); list=others
 end
 
--- =============================================================
+-- ============================================================
 -- SPECTATE
--- =============================================================
+-- ============================================================
 local function stopSpec()
-    local prev = specP; specP = nil
-    local cam = workspace.CurrentCamera
-    local mc  = LocalPlayer.Character
-    if cam and mc then
-        local h = mc:FindFirstChildOfClass("Humanoid")
-        if h then cam.CameraSubject = h end
-    end
-    if prev then notify("Stopped spectating " .. prev.Name) end
+    local prev=specP; specP=nil
+    local cam=workspace.CurrentCamera; local mc=LocalPlayer.Character
+    if cam and mc then local h=mc:FindFirstChildOfClass("Humanoid"); if h then cam.CameraSubject=h end end
+    if prev then notify("Stopped spectating "..prev.Name) end
 end
-
 local function startSpec(p)
     if specP then stopSpec() end
-    local c = p.Character
-    if not c then notify("No character: " .. p.Name) return end
-    local h = c:FindFirstChildOfClass("Humanoid")
-    if not h then notify("No humanoid: " .. p.Name) return end
-    specP = p
-    local cam = workspace.CurrentCamera
-    if cam then cam.CameraSubject = h end
-    notify("Spectating " .. p.Name)
+    local c=p.Character; if not c then notify("No character: "..p.Name) return end
+    local h=c:FindFirstChildOfClass("Humanoid"); if not h then notify("No humanoid: "..p.Name) return end
+    specP=p; local cam=workspace.CurrentCamera; if cam then cam.CameraSubject=h end
+    notify("Spectating "..p.Name)
 end
-
 local function checkSpec()
     if not specP then return end
-    local c = specP.Character
+    local c=specP.Character
     if not c or not c:FindFirstChildOfClass("Humanoid") then stopSpec() end
 end
 
--- =============================================================
+-- ============================================================
 -- TELEPORT
--- =============================================================
+-- ============================================================
 local function teleportTo(p)
-    local tc = p.Character; local mc = LocalPlayer.Character
+    local tc=p.Character; local mc=LocalPlayer.Character
     if not tc or not mc then notify("TP failed: no character") return end
-    local tr = tc:FindFirstChild("HumanoidRootPart")
-    local mr = mc:FindFirstChild("HumanoidRootPart")
+    local tr=tc:FindFirstChild("HumanoidRootPart"); local mr=mc:FindFirstChild("HumanoidRootPart")
     if not tr or not mr then notify("TP failed: no RootPart") return end
-    tpTgt  = {x=tr.Position.X, y=tr.Position.Y+2, z=tr.Position.Z}
-    tpRoot = mr; tpFr = 10
-    notify("Teleporting to " .. p.Name)
+    tpTgt={x=tr.Position.X,y=tr.Position.Y+2,z=tr.Position.Z}; tpRoot=mr; tpFr=10
+    notify("Teleporting to "..p.Name)
 end
-
 local function tickTP()
-    if tpFr <= 0 or not tpRoot or not tpTgt then return end
-    pcall(function()
-        tpRoot.CFrame   = CFrame.new(tpTgt.x, tpTgt.y, tpTgt.z)
-        tpRoot.Velocity = Vector3.new(0,0,0)
-    end)
-    tpFr -= 1
-    if tpFr <= 0 then tpTgt=nil; tpRoot=nil end
+    if tpFr<=0 or not tpRoot or not tpTgt then return end
+    pcall(function() tpRoot.CFrame=CFrame.new(tpTgt.x,tpTgt.y,tpTgt.z); tpRoot.Velocity=Vector3.new(0,0,0) end)
+    tpFr-=1; if tpFr<=0 then tpTgt=nil; tpRoot=nil end
 end
 
--- =============================================================
+-- ============================================================
 -- FLING
--- =============================================================
+-- ============================================================
 local function startFling(name)
-    if fPhase ~= "idle" then return end
-    if not name or name == "" then notify("No target") return end
-    local target = findP(name)
-    if not target then notify("Not found: " .. tostring(name)) return end
-    local thrp = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-    if not thrp then notify(target.Name .. " has no character") return end
-    local myHRP = getHRP()
-    if not myHRP then notify("You have no character") return end
-    local pos = myHRP.Position
-    fSaved  = {x=pos.X, y=pos.Y, z=pos.Z}
-    fTarget = target.Name
-    fFrames = F.sustained and F_SF or F_QF
-    fPhase  = "fling"
-    if F.sustained then
-        notify("Sustained fling on " .. target.Name)
-    else
-        notify("Quick fling on " .. target.Name)
-    end
+    if fPhase~="idle" then return end
+    if not name or name=="" then notify("No target") return end
+    local target=findP(name)
+    if not target then notify("Not found: "..tostring(name)) return end
+    local thrp=target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+    if not thrp then notify(target.Name.." has no character") return end
+    local myHRP=getHRP(); if not myHRP then notify("You have no character") return end
+    local pos=myHRP.Position; fSaved={x=pos.X,y=pos.Y,z=pos.Z}
+    fTarget=target.Name; fFrames=F.sustained and F_SF or F_QF; fPhase="fling"
+    if F.sustained then notify("Sustained fling on "..target.Name)
+    else notify("Quick fling on "..target.Name) end
 end
 
--- =============================================================
+-- ============================================================
 -- FEATURES
--- =============================================================
+-- ============================================================
 local function tickDiedTP(dt)
     if not F.diedTp then return end
-    if F.dCooldown > 0 then F.dCooldown -= dt return end
+    if F.dCooldown>0 then F.dCooldown-=dt return end
     pcall(function()
-        local c = LocalPlayer.Character
-        if not c then F.dWasAlive=false return end
-        local r = c:FindFirstChild("HumanoidRootPart")
-        local h = c:FindFirstChildOfClass("Humanoid")
+        local c=LocalPlayer.Character; if not c then F.dWasAlive=false return end
+        local r=c:FindFirstChild("HumanoidRootPart"); local h=c:FindFirstChildOfClass("Humanoid")
         if not r or not h then F.dWasAlive=false return end
-        local alive = h.Health > 0
-        if alive then F.dLastPos = r.Position end
+        local alive=h.Health>0
+        if alive then F.dLastPos=r.Position end
         if F.dWasAlive and not alive then F.dDeathPos=F.dLastPos; F.dWasDead=true end
         if F.dWasDead and alive and F.dDeathPos then
-            local saved = F.dDeathPos
+            local saved=F.dDeathPos
             task.spawn(function()
                 task.wait(0.18)
-                local nr = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if nr then
-                    nr.CFrame   = CFrame.new(saved + Vector3.new(0,3,0))
-                    nr.Velocity = Vector3.new(0,0,0)
-                    notify("DiedTP: returned to death spot")
-                end
+                local nr=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if nr then nr.CFrame=CFrame.new(saved+Vector3.new(0,3,0)); nr.Velocity=Vector3.new(0,0,0); notify("DiedTP: returned") end
             end)
             F.dWasDead=false; F.dDeathPos=nil; F.dCooldown=2
         end
-        F.dWasAlive = alive
+        F.dWasAlive=alive
     end)
 end
-
 local function tickThirdP()
     if not F.thirdP then return end
     pcall(function()
-        local c   = LocalPlayer.Character
-        local cam = workspace.CurrentCamera
+        local c=LocalPlayer.Character; local cam=workspace.CurrentCamera
         if not c or not cam then return end
-        local head = c:FindFirstChild("Head") or c.PrimaryPart
-        if not head then return end
-        local look = cam.CFrame.LookVector
-        cam.CFrame = CFrame.new(
-            head.Position - look*F.tDist + Vector3.new(0,F.tHeight,0),
-            head.Position)
+        local head=c:FindFirstChild("Head") or c.PrimaryPart; if not head then return end
+        local look=cam.CFrame.LookVector
+        cam.CFrame=CFrame.new(head.Position-look*F.tDist+Vector3.new(0,F.tHeight,0),head.Position)
     end)
 end
-
 local function tickSpam()
     if not F.spamFling then return end
-    if fPhase ~= "idle" then return end
-    if F.spamTarget == "" then return end
-    local now = os.clock()
-    if now - F.spamLast < F.spamDelay then return end
-    F.spamLast = now
-    startFling(F.spamTarget)
+    if fPhase~="idle" then return end
+    if F.spamTarget=="" then return end
+    local now=os.clock(); if now-F.spamLast<F.spamDelay then return end
+    F.spamLast=now; startFling(F.spamTarget)
 end
-
 local function tickAntiVoid(dt)
     if not F.antiVoid then return end
-    if F.avCooldown > 0 then F.avCooldown -= dt return end
+    if F.avCooldown>0 then F.avCooldown-=dt return end
     pcall(function()
-        local c = LocalPlayer.Character
-        if not c then return end
-        local r = c:FindFirstChild("HumanoidRootPart")
-        if not r then return end
-        if r.Position.Y < F.avThresh then
-            local sp = getSpawn()
-            r.CFrame   = CFrame.new(sp)
-            r.Velocity = Vector3.new(0,0,0)
-            F.avCooldown = 2
-            notify("Anti-Void: teleported to spawn")
+        local c=LocalPlayer.Character; if not c then return end
+        local r=c:FindFirstChild("HumanoidRootPart"); if not r then return end
+        if r.Position.Y<F.avThresh then
+            local sp=getSpawn(); r.CFrame=CFrame.new(sp); r.Velocity=Vector3.new(0,0,0)
+            F.avCooldown=2; notify("Anti-Void: teleported to spawn")
         end
     end)
 end
-
--- Anti-AFK: simulate input to prevent kick
 local function enableAntiAFK()
     if F.afkConn then return end
-    F.afkConn = task.spawn(function()
+    F.afkConn=task.spawn(function()
         while F.antiAFK do
             pcall(function()
-                -- move mouse slightly to reset AFK timer
-                local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
-                if vp then
-                    local cx = (vp.X or 960)/2
-                    local cy = (vp.Y or 540)/2
-                    mousemoveabs(cx + math.random(-1,1), cy + math.random(-1,1))
-                end
+                local vp=workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+                if vp then mousemoveabs((vp.X or 960)/2+math.random(-1,1),(vp.Y or 540)/2+math.random(-1,1)) end
             end)
             task.wait(60)
         end
-        F.afkConn = nil
+        F.afkConn=nil
     end)
 end
-
-local function disableAntiAFK()
-    F.antiAFK = false
-    F.afkConn = nil
-end
-
--- Instant Interact: fetch offset then loop writing 0 to ProximityPrompt hold duration
 local function enableInstantInteract()
     if F.iiLoop then return end
     task.spawn(function()
-        -- try to fetch live offset
-        local offset = nil
+        local offset=nil
         pcall(function()
-            local ok, res = pcall(function()
-                return game:HttpGet("https://offsets.ntgetwritewatch.workers.dev/offsets.json")
-            end)
+            local ok,res=pcall(function() return game:HttpGet("https://offsets.ntgetwritewatch.workers.dev/offsets.json") end)
             if ok and res then
-                local data = crypt.json.decode(res)
+                local data=crypt.json.decode(res)
                 if data and data.ProximityPromptHoldDuraction then
-                    offset = tonumber(data.ProximityPromptHoldDuraction, 16)
+                    offset=tonumber(data.ProximityPromptHoldDuraction,16)
                 end
             end
         end)
-        F.iiOffset = offset
-        if offset then
-            notify("Instant Interact ON (offset " .. string.format("0x%X", offset) .. ")")
-        else
-            notify("Instant Interact ON (no offset, skipping memory write)")
-        end
-
-        F.iiLoop = true
+        F.iiOffset=offset
+        if offset then notify("Instant Interact ON (mem)")
+        else notify("Instant Interact ON (prop)") end
+        F.iiLoop=true
         while F.iiLoop do
             pcall(function()
-                if F.iiOffset then
-                    for _,obj in ipairs(game:GetDescendants()) do
-                        if obj.ClassName == "ProximityPrompt" then
-                            pcall(function() memory.writef32(obj, F.iiOffset, 0) end)
-                        end
-                    end
-                else
-                    -- fallback: set HoldDuration via property
-                    for _,obj in ipairs(game:GetDescendants()) do
-                        if obj.ClassName == "ProximityPrompt" then
-                            pcall(function() obj.HoldDuration = 0 end)
-                        end
+                for _,obj in ipairs(game:GetDescendants()) do
+                    if obj.ClassName=="ProximityPrompt" then
+                        if F.iiOffset then pcall(function() memory.writef32(obj,F.iiOffset,0) end)
+                        else pcall(function() obj.HoldDuration=0 end) end
                     end
                 end
             end)
@@ -553,279 +495,266 @@ local function enableInstantInteract()
         end
     end)
 end
-
 local function disableInstantInteract()
-    F.iiLoop = false
-    F.iiOffset = nil
-    notify("Instant Interact OFF")
+    F.iiLoop=false; F.iiOffset=nil; notify("Instant Interact OFF")
 end
-
 local function doForceReset()
-    local c = LocalPlayer.Character
-    if not c then notify("No character") return end
-    local done = false
-    pcall(function()
-        local h = c:FindFirstChildOfClass("Humanoid")
-        if h then memory.writef32(h, 0x194, 0); done=true end
-    end)
-    if not done then
-        pcall(function()
-            local h = c:FindFirstChildOfClass("Humanoid")
-            if h then h.Health=0; done=true end
-        end)
-    end
+    local c=LocalPlayer.Character; if not c then notify("No character") return end
+    local done=false
+    pcall(function() local h=c:FindFirstChildOfClass("Humanoid"); if h then memory.writef32(h,0x194,0); done=true end end)
+    if not done then pcall(function() local h=c:FindFirstChildOfClass("Humanoid"); if h then h.Health=0; done=true end end) end
     if done then notify("Force Reset done") else notify("Force Reset failed") end
 end
 
-local function copyUID(p)
-    local id = (p or LocalPlayer).UserId
-    local nm = (p or LocalPlayer).Name
-    pcall(function() setclipboard(tostring(id)) end)
-    notify(nm .. " UID: " .. tostring(id) .. " (copied)")
-end
-
--- =============================================================
+-- ============================================================
 -- DRAWING HELPERS
--- =============================================================
-local DI = DrawingImmediate
-
-local function fR(x,y,w,h,c,op)
-    DI.FilledRectangle(Vector2.new(x,y), Vector2.new(w,h), c, op or 1)
-end
-local function sR(x,y,w,h,c,op,t)
-    DI.Rectangle(Vector2.new(x,y), Vector2.new(w,h), c, op or 1, t or 1)
-end
-local function tx(x,y,sz,c,s,cen)
-    DI.OutlinedText(Vector2.new(x,y), sz, c, 1, s, cen or false, "Tamzen")
-end
+-- ============================================================
+local DI=DrawingImmediate
+local function fR(x,y,w,h,c,op) DI.FilledRectangle(Vector2.new(x,y),Vector2.new(w,h),c,op or 1) end
+local function sR(x,y,w,h,c,op,t) DI.Rectangle(Vector2.new(x,y),Vector2.new(w,h),c,op or 1,t or 1) end
+local function tx(x,y,sz,c,s,cen) DI.OutlinedText(Vector2.new(x,y),sz,c,1,s,cen or false,"Tamzen") end
 
 local function mkSq(els,x,y,w,h,col,filled,rnd,op,thick)
-    local s = Drawing.new("Square")
-    s.Visible=true; s.Position=Vector2.new(x,y); s.Size=Vector2.new(w,h)
+    local s=Drawing.new("Square"); s.Visible=true; s.Position=Vector2.new(x,y); s.Size=Vector2.new(w,h)
     s.Color=col; s.Filled=filled; s.Rounding=rnd or 0; s.Opacity=op or 1
-    if not filled then s.Thickness = thick or 1 end
-    table.insert(els, s); return s
+    if not filled then s.Thickness=thick or 1 end; table.insert(els,s); return s
 end
 local function mkTx(els,x,y,sz,col,str,center)
-    local t = Drawing.new("Text")
-    t.Visible=true; t.Position=Vector2.new(x,y); t.Size=sz
-    t.Color=col; t.Text=str; t.Outline=true; t.Center=center or false
-    table.insert(els, t); return t
+    local t=Drawing.new("Text"); t.Visible=true; t.Position=Vector2.new(x,y); t.Size=sz
+    t.Color=col; t.Text=str; t.Outline=true; t.Center=center or false; table.insert(els,t); return t
 end
 local function mkCi(els,x,y,r,col,filled,sides,thick)
-    local c = Drawing.new("Circle")
-    c.Visible=true; c.Position=Vector2.new(x,y); c.Radius=r
+    local c=Drawing.new("Circle"); c.Visible=true; c.Position=Vector2.new(x,y); c.Radius=r
     c.Color=col; c.Filled=filled; c.NumSides=sides or 24
-    if not filled then c.Thickness = thick or 2 end
-    table.insert(els, c); return c
+    if not filled then c.Thickness=thick or 2 end; table.insert(els,c); return c
 end
 local function clearEls(t)
     for _,e in ipairs(t) do pcall(function() e:Remove() end) end
     for k in pairs(t) do t[k]=nil end
 end
 
--- =============================================================
--- SERVER INFO
--- =============================================================
-local function clearSI() clearEls(siEls); siClose=nil; siMain=nil end
+-- ============================================================
+-- SERVER INFO  (with copy buttons)
+-- ============================================================
+local function clearSI() clearEls(siEls); siClose=nil; siMain=nil; siCopyBtns={} end
 
 local function drawSI()
     clearSI()
-    local vpx,vpy = getVP()
-    local W,H = 350,272
-    local x = math.floor(vpx/2-W/2); local y = math.floor(vpy/2-H/2)
-    mkSq(siEls,x-6,y-6,W+12,H+12,T.blk,true,16,0.55)
-    mkSq(siEls,x,y,W,H,T.bg1,true,10)
-    mkSq(siEls,x,y,W,H,T.brdr,false,10,1,1)
-    mkSq(siEls,x,y,IR,H,T.acc,true,2)
-    mkSq(siEls,x,y,W,O_HDR,T.bg2,true,10)
-    mkSq(siEls,x,y+O_HDR-1,W,1,T.line,true)
-    mkSq(siEls,x,y,IR,O_HDR,T.acc,true,2)
-    mkCi(siEls,x+26,y+O_HDR/2,12,T.acc,false,24,2)
-    mkTx(siEls,x+26,y+O_HDR/2-7,12,T.acc,"S",true)
-    mkTx(siEls,x+46,y+16,13,T.t0,"Server Info",false)
-    local cx,cy = x+W-34, y+13
-    mkSq(siEls,cx,cy,22,22,T.bg4,true,5)
-    mkTx(siEls,cx+11,cy+3,16,T.t1,"x",true)
-    siClose={x=cx,y=cy,w=22,h=22}; siMain={x=x,y=y,w=W,h=H}
+    local vpx,vpy=getVP()
+    local W=360; local ROWA=32; local HDW=48
     local rows={
-        {"Place ID",  tostring(game.PlaceId  or 0)},
-        {"Game ID",   tostring(game.GameId   or 0)},
-        {"Players",   tostring(#Players:GetChildren())},
-        {"Username",  LocalPlayer.Name},
-        {"User ID",   tostring(LocalPlayer.UserId)},
-        {"Job ID",    game.JobId and game.JobId:sub(1,18).."..." or "N/A"},
+        {lbl="Place ID",  val=tostring(game.PlaceId  or 0)},
+        {lbl="Game ID",   val=tostring(game.GameId   or 0)},
+        {lbl="Players",   val=tostring(#Players:GetChildren())},
+        {lbl="Username",  val=LocalPlayer.Name},
+        {lbl="User ID",   val=tostring(LocalPlayer.UserId)},
+        {lbl="Job ID",    val=game.JobId and game.JobId:sub(1,20).."..." or "N/A"},
     }
-    local ry = y+O_HDR+10
+    local H=HDW+(#rows)*(ROWA+4)+16
+    local x=math.floor(vpx/2-W/2); local y=math.floor(vpy/2-H/2)
+
+    mkSq(siEls,x-5,y-5,W+10,H+10,T.blk,true,14,0.5)
+    mkSq(siEls,x,y,W,H,T.bg1,true,8)
+    mkSq(siEls,x,y,W,H,T.brdr,false,8,1,1)
+    mkSq(siEls,x,y,IR,H,T.acc,true,2)
+    mkSq(siEls,x,y,W,HDW,T.bg2,true,8)
+    mkSq(siEls,x,y+HDW-1,W,1,T.line,true)
+    mkSq(siEls,x,y,IR,HDW,T.acc,true,2)
+    mkCi(siEls,x+24,y+HDW/2,11,T.acc,false,24,2)
+    mkTx(siEls,x+24,y+HDW/2-6,11,T.acc,"S",true)
+    mkTx(siEls,x+42,y+14,13,T.t0,"Server Info",false)
+    mkTx(siEls,x+42,y+29,9,T.t2,"Click any row to copy",false)
+    -- close
+    local cx,cy=x+W-30,y+12
+    mkSq(siEls,cx,cy,20,20,T.bg4,true,4)
+    mkTx(siEls,cx+10,cy+3,13,T.t1,"x",true)
+    siClose={x=cx,y=cy,w=20,h=20}; siMain={x=x,y=y,w=W,h=H}
+
+    local ry=y+HDW+8
     for _,row in ipairs(rows) do
-        mkSq(siEls,x+PAD,ry,W-PAD*2,28,T.bg3,true,4)
-        mkSq(siEls,x+PAD,ry,IR,28,T.util,true,2)
-        mkTx(siEls,x+PAD+10,ry+9,10,T.t1,row[1],false)
-        mkTx(siEls,x+PAD+130,ry+9,10,T.t0,row[2],false)
-        ry += 32
+        -- row bg
+        mkSq(siEls,x+PAD,ry,W-PAD*2,ROWA,T.bg3,true,4)
+        mkSq(siEls,x+PAD,ry,IR,ROWA,T.util,true,2)
+        mkTx(siEls,x+PAD+9, ry+10,9, T.t2,row.lbl,false)
+        mkTx(siEls,x+PAD+96,ry+10,9, T.t0,row.val,false)
+        -- copy button on right
+        local bx=x+W-PAD-36; local bby=ry+(ROWA-16)/2
+        mkSq(siEls,bx,bby,36,16,T.bg4,true,3)
+        mkSq(siEls,bx,bby,36,16,T.util,false,3,0.4,1)
+        mkTx(siEls,bx+18,bby+3,8,T.util,"COPY",true)
+        table.insert(siCopyBtns,{x=bx,y=bby,w=36,h=16,val=row.val,lbl=row.lbl})
+        ry+=ROWA+4
     end
 end
 
--- =============================================================
--- THEME PANEL
--- =============================================================
-local function clearThm() clearEls(thmEls); thmAcc={}; thmBg={}; thmClose=nil end
+-- ============================================================
+-- THEME PANEL  (draggable)
+-- ============================================================
+local function clearThm() clearEls(thmEls); thmAcc={}; thmBg={}; thmClose=nil; thmHdr=nil end
 
 local function drawThm()
     clearThm()
-    local vpx,vpy = getVP()
-    local COLS = 5; local swH,swG = 52,6; local W = 430
-    local ra = math.ceil(#AccPre/COLS); local rb = math.ceil(#BgPre/3)
-    local H = O_HDR + (O_SEC+14) + ra*(swH+swG) + 10 + (O_SEC+14) + rb*(swH+swG) + 20
-    local x = math.floor(vpx/2-W/2); local y = math.floor(vpy/2-H/2)
-    mkSq(thmEls,x-6,y-6,W+12,H+12,T.blk,true,18,0.55)
-    mkSq(thmEls,x,y,W,H,T.bg1,true,10)
-    mkSq(thmEls,x,y,W,H,T.brdr,false,10,1,1)
+    local vpx,vpy=getVP()
+    local COLS=5; local swH,swG=50,5; local W=420
+    local ra=math.ceil(#AccPre/COLS); local rb=math.ceil(#BgPre/3)
+    local H=O_HDR+(O_SEC+12)+ra*(swH+swG)+10+(O_SEC+12)+rb*(swH+swG)+18
+    -- position: use saved if set, else centre
+    if thmX==0 and thmY==0 then
+        thmX=math.floor(vpx/2-W/2); thmY=math.floor(vpy/2-H/2)
+    end
+    thmX=clamp(thmX,0,vpx-W); thmY=clamp(thmY,0,vpy-H)
+    local x,y=thmX,thmY
+
+    mkSq(thmEls,x-5,y-5,W+10,H+10,T.blk,true,16,0.5)
+    mkSq(thmEls,x,y,W,H,T.bg1,true,8)
+    mkSq(thmEls,x,y,W,H,T.brdr,false,8,1,1)
     mkSq(thmEls,x,y,IR,H,T.acc,true,2)
-    mkSq(thmEls,x,y,W,O_HDR,T.bg2,true,10)
+    mkSq(thmEls,x,y,W,O_HDR,T.bg2,true,8)
     mkSq(thmEls,x,y+O_HDR-1,W,1,T.line,true)
     mkSq(thmEls,x,y,IR,O_HDR,T.acc,true,2)
-    mkCi(thmEls,x+26,y+O_HDR/2,12,T.acc,false,24,2)
-    mkTx(thmEls,x+26,y+O_HDR/2-7,12,T.acc,"S",true)
-    mkTx(thmEls,x+46,y+14,13,T.t0,"Customize Theme",false)
-    mkTx(thmEls,x+46,y+30,9,T.t2,"Accent | Background",false)
-    local cx,cy = x+W-34, y+13
-    mkSq(thmEls,cx,cy,22,22,T.bg4,true,5)
-    mkTx(thmEls,cx+11,cy+3,16,T.t1,"x",true)
-    thmClose={x=cx,y=cy,w=22,h=22}
-    local sw = math.floor((W-PAD*2-swG*(COLS-1))/COLS)
-    local iy = y+O_HDR+8
-    -- accent label
-    mkSq(thmEls,x+PAD,iy,W-PAD*2,O_SEC,T.bg2,true,4)
+    mkCi(thmEls,x+24,y+O_HDR/2,11,T.acc,false,24,2)
+    mkTx(thmEls,x+24,y+O_HDR/2-6,11,T.acc,"S",true)
+    mkTx(thmEls,x+42,y+14,13,T.t0,"Customize Theme",false)
+    mkTx(thmEls,x+42,y+28,9,T.t2,"Drag header to move",false)
+    -- close
+    local cx,cy=x+W-30,y+13
+    mkSq(thmEls,cx,cy,20,20,T.bg4,true,4)
+    mkTx(thmEls,cx+10,cy+3,13,T.t1,"x",true)
+    thmClose={x=cx,y=cy,w=20,h=20}
+    thmHdr={x=x,y=y,w=W-36,h=O_HDR}
+
+    local sw=math.floor((W-PAD*2-swG*(COLS-1))/COLS)
+    local iy=y+O_HDR+8
+
+    -- accent section
+    mkSq(thmEls,x+PAD,iy,W-PAD*2,O_SEC,T.bg2,true,3)
     mkSq(thmEls,x+PAD,iy,2,O_SEC,T.acc,true)
-    mkTx(thmEls,x+PAD+10,iy+(O_SEC-9)/2,9,T.t2,"ACCENT COLOUR",false)
-    iy += O_SEC+8
-    local sx = x+PAD
+    mkTx(thmEls,x+PAD+8,iy+(O_SEC-9)/2,9,T.t2,"ACCENT",false)
+    iy+=O_SEC+8
+
+    local sx=x+PAD
     for i,p in ipairs(AccPre) do
-        local sel = (math.abs(T.acc.R-p.a.R)<0.01 and math.abs(T.acc.G-p.a.G)<0.01)
-        mkSq(thmEls,sx,iy,sw,swH,sel and T.bg4 or T.bg3,true,5)
-        if sel then mkSq(thmEls,sx,iy,sw,swH,T.acc,false,5,1,2); mkSq(thmEls,sx,iy,2,swH,T.acc,true,2) end
-        local hw = math.floor((sw-8)/2)
-        mkSq(thmEls,sx+4,iy+6,hw,swH-20,p.a,true,3)
-        mkSq(thmEls,sx+4+hw+2,iy+6,hw,swH-20,p.s,true,3)
-        mkTx(thmEls,sx+sw/2,iy+swH-13,8,T.t1,p.n,true)
+        local sel=(math.abs(T.acc.R-p.a.R)<0.01 and math.abs(T.acc.G-p.a.G)<0.01)
+        mkSq(thmEls,sx,iy,sw,swH,sel and T.bg4 or T.bg3,true,4)
+        if sel then mkSq(thmEls,sx,iy,sw,swH,T.acc,false,4,1,2); mkSq(thmEls,sx,iy,2,swH,T.acc,true,2) end
+        local hw=math.floor((sw-8)/2)
+        mkSq(thmEls,sx+4,iy+5,hw,swH-18,p.a,true,3)
+        mkSq(thmEls,sx+4+hw+2,iy+5,hw,swH-18,p.s,true,3)
+        mkTx(thmEls,sx+sw/2,iy+swH-12,8,sel and T.t0 or T.t1,p.n,true)
         table.insert(thmAcc,{x=sx,y=iy,w=sw,h=swH}); sx+=sw+swG
         if i%COLS==0 then sx=x+PAD; iy+=swH+swG end
     end
     if #AccPre%COLS~=0 then iy+=swH+swG end; iy+=8
-    -- bg label
-    mkSq(thmEls,x+PAD,iy,W-PAD*2,O_SEC,T.bg2,true,4)
+
+    -- bg section
+    mkSq(thmEls,x+PAD,iy,W-PAD*2,O_SEC,T.bg2,true,3)
     mkSq(thmEls,x+PAD,iy,2,O_SEC,T.acc,true)
-    mkTx(thmEls,x+PAD+10,iy+(O_SEC-9)/2,9,T.t2,"BACKGROUND",false)
+    mkTx(thmEls,x+PAD+8,iy+(O_SEC-9)/2,9,T.t2,"BACKGROUND",false)
     iy+=O_SEC+8
+
     local BC=3; local sw2=math.floor((W-PAD*2-swG*(BC-1))/BC); sx=x+PAD
     for i,p in ipairs(BgPre) do
         local sel=(math.abs(T.bg1.R-p.b1.R)<0.01 and math.abs(T.bg1.G-p.b1.G)<0.01)
-        mkSq(thmEls,sx,iy,sw2,swH,sel and T.bg4 or T.bg3,true,5)
-        if sel then mkSq(thmEls,sx,iy,sw2,swH,T.acc,false,5,1,2); mkSq(thmEls,sx,iy,2,swH,T.acc,true,2) end
+        mkSq(thmEls,sx,iy,sw2,swH,sel and T.bg4 or T.bg3,true,4)
+        if sel then mkSq(thmEls,sx,iy,sw2,swH,T.acc,false,4,1,2); mkSq(thmEls,sx,iy,2,swH,T.acc,true,2) end
         local tw=math.floor((sw2-10)/3)
-        mkSq(thmEls,sx+4,      iy+6,tw,swH-20,p.b1,true,3)
-        mkSq(thmEls,sx+4+tw+2, iy+6,tw,swH-20,p.b2,true,3)
-        mkSq(thmEls,sx+4+tw*2+4,iy+6,tw,swH-20,p.b3,true,3)
-        mkTx(thmEls,sx+sw2/2,iy+swH-13,8,T.t1,p.n,true)
+        mkSq(thmEls,sx+4,iy+5,tw,swH-18,p.b1,true,3)
+        mkSq(thmEls,sx+4+tw+2,iy+5,tw,swH-18,p.b2,true,3)
+        mkSq(thmEls,sx+4+tw*2+4,iy+5,tw,swH-18,p.b3,true,3)
+        mkTx(thmEls,sx+sw2/2,iy+swH-12,8,sel and T.t0 or T.t1,p.n,true)
         table.insert(thmBg,{x=sx,y=iy,w=sw2,h=swH}); sx+=sw2+swG
         if i%BC==0 then sx=x+PAD; iy+=swH+swG end
     end
 end
 
--- =============================================================
--- OPTIONS PANEL
--- =============================================================
+-- ============================================================
+-- OPTIONS PANEL  (draggable)
+-- ============================================================
 local function calcOH()
-    -- TOGGLES: 7 rows (DiedTP, ThirdP, SpamFling, Sustained, AntiVoid, AntiAFK, InstantInteract)
-    -- + 1 interval row
-    -- ACTIONS: 4 rows
-    -- 3 section bars + header + padding
-    return O_HDR + (O_SEC+6)*3 + 8*(O_ROW+O_GAP) + 4*(O_ROW+O_GAP) + 20
+    -- 5 feature toggles + 2 fling toggles + 1 interval = 8 rows + 3 section bars
+    return O_HDR+(O_SEC+5)*3+8*(O_ROW+O_GAP)+4*(O_ROW+O_GAP)+18
 end
 
-local function clearOpt()
-    clearEls(optEls); optClose=nil; optHdr=nil; optTog={}; optBtn={}
-end
+local function clearOpt() clearEls(optEls); optClose=nil; optHdr=nil; optTog={}; optBtn={} end
 
 local function drawOpt()
-    clearOpt()
-    OH = calcOH()
-    local vpx,vpy = getVP()
-    if optX == 0 then
-        optX = pX+PW+10; optY = pY
-        if optX+OW > vpx then optX = pX-OW-10 end
-    end
+    clearOpt(); OH=calcOH()
+    local vpx,vpy=getVP()
+    if optX==0 then optX=pX+PW+10; optY=pY; if optX+OW>vpx then optX=pX-OW-10 end end
     optX=clamp(optX,0,vpx-OW); optY=clamp(optY,0,vpy-OH)
-    local x,y = optX,optY
+    local x,y=optX,optY
 
-    mkSq(optEls,x-6,y-6,OW+12,OH+12,T.blk,true,16,0.55)
-    mkSq(optEls,x,y,OW,OH,T.bg1,true,10)
-    mkSq(optEls,x,y,OW,OH,T.brdr,false,10,1,1)
+    mkSq(optEls,x-5,y-5,OW+10,OH+10,T.blk,true,14,0.5)
+    mkSq(optEls,x,y,OW,OH,T.bg1,true,8)
+    mkSq(optEls,x,y,OW,OH,T.brdr,false,8,1,1)
     mkSq(optEls,x,y,IR,OH,T.acc,true,2)
-    mkSq(optEls,x,y,OW,O_HDR,T.bg2,true,10)
+    mkSq(optEls,x,y,OW,O_HDR,T.bg2,true,8)
     mkSq(optEls,x,y+O_HDR-1,OW,1,T.line,true)
     mkSq(optEls,x,y,IR,O_HDR,T.acc,true,2)
-    mkCi(optEls,x+28,y+O_HDR/2,13,T.acc,false,24,2)
-    mkTx(optEls,x+28,y+O_HDR/2-7,13,T.acc,"S",true)
-    mkTx(optEls,x+50,y+14,14,T.t0,"OPTIONS",false)
-    mkTx(optEls,x+50,y+30,9,T.t2,"Features | Utilities",false)
-    local cx,cy = x+OW-34, y+13
-    mkSq(optEls,cx,cy,22,22,T.bg4,true,5)
-    mkTx(optEls,cx+11,cy+3,16,T.t1,"x",true)
-    optClose={x=cx,y=cy,w=22,h=22}; optHdr={x=x,y=y,w=OW-40,h=O_HDR}
+    mkCi(optEls,x+24,y+O_HDR/2,11,T.acc,false,24,2)
+    mkTx(optEls,x+24,y+O_HDR/2-6,11,T.acc,"S",true)
+    mkTx(optEls,x+42,y+13,13,T.t0,"OPTIONS",false)
+    mkTx(optEls,x+42,y+28,9,T.t2,"Features | Utilities",false)
+    local cx,cy=x+OW-30,y+13
+    mkSq(optEls,cx,cy,20,20,T.bg4,true,4)
+    mkTx(optEls,cx+10,cy+3,13,T.t1,"x",true)
+    optClose={x=cx,y=cy,w=20,h=20}; optHdr={x=x,y=y,w=OW-36,h=O_HDR}
 
-    local W = OW-PAD*2; local iy = y+O_HDR+8
+    local W=OW-PAD*2; local iy=y+O_HDR+8
 
     local function secBar(label)
-        mkSq(optEls,x+PAD,iy,W,O_SEC,T.bg2,true,4)
+        mkSq(optEls,x+PAD,iy,W,O_SEC,T.bg2,true,3)
         mkSq(optEls,x+PAD,iy,2,O_SEC,T.acc,true)
-        mkTx(optEls,x+PAD+10,iy+(O_SEC-9)/2,9,T.t2,label,false)
-        iy+=O_SEC+6
+        mkTx(optEls,x+PAD+8,iy+(O_SEC-9)/2,9,T.t2,label,false)
+        iy+=O_SEC+5
     end
 
     local function togRow(col,label,desc,isOn)
-        mkSq(optEls,x+PAD,iy,W,O_ROW,T.bg3,true,6)
+        mkSq(optEls,x+PAD,iy,W,O_ROW,T.bg3,true,5)
         mkSq(optEls,x+PAD,iy,IR,O_ROW,col,true,2)
-        mkCi(optEls,x+PAD+18,iy+O_ROW/2,4,isOn and col or T.t2,true,12)
-        mkTx(optEls,x+PAD+30,iy+10,12,T.t0,label,false)
-        mkTx(optEls,x+PAD+30,iy+26,9,T.t1,desc,false)
-        local TW,TH=42,20; local tx2=x+PAD+W-TW-10; local ty2=iy+(O_ROW-TH)/2
-        mkSq(optEls,tx2,ty2,TW,TH,isOn and T.acc or T.bg4,true,10)
-        local kx=isOn and (tx2+TW-13) or (tx2+4)
-        mkCi(optEls,kx+5,ty2+TH/2,6,T.wht,true,16)
+        -- status dot
+        mkCi(optEls,x+PAD+16,iy+O_ROW/2,4,isOn and col or T.t2,true,12)
+        mkTx(optEls,x+PAD+28,iy+9,11,T.t0,label,false)
+        mkTx(optEls,x+PAD+28,iy+24,8,T.t1,desc,false)
+        -- pill toggle
+        local TW,TH=38,18; local tx2=x+PAD+W-TW-8; local ty2=iy+(O_ROW-TH)/2
+        mkSq(optEls,tx2,ty2,TW,TH,isOn and T.acc or T.bg4,true,9)
+        local kx=isOn and (tx2+TW-15) or (tx2+3)
+        mkCi(optEls,kx+6,ty2+TH/2,6,T.wht,true,16)
         table.insert(optTog,{x=tx2,y=ty2,w=TW,h=TH}); iy+=O_ROW+O_GAP
     end
 
     local function btnRow(col,label,desc,bl)
-        mkSq(optEls,x+PAD,iy,W,O_ROW,T.bg3,true,6)
+        mkSq(optEls,x+PAD,iy,W,O_ROW,T.bg3,true,5)
         mkSq(optEls,x+PAD,iy,IR,O_ROW,col,true,2)
-        mkCi(optEls,x+PAD+18,iy+O_ROW/2,4,col,true,12)
-        mkTx(optEls,x+PAD+30,iy+10,12,T.t0,label,false)
-        mkTx(optEls,x+PAD+30,iy+26,9,T.t1,desc,false)
-        local BW=62; local bx=x+PAD+W-BW-10; local by=iy+(O_ROW-20)/2
-        mkSq(optEls,bx,by,BW,20,col,true,4)
-        mkTx(optEls,bx+BW/2,by+5,9,T.wht,bl or "RUN",true)
-        table.insert(optBtn,{x=bx,y=by,w=BW,h=20}); iy+=O_ROW+O_GAP
+        mkCi(optEls,x+PAD+16,iy+O_ROW/2,4,col,true,12)
+        mkTx(optEls,x+PAD+28,iy+9,11,T.t0,label,false)
+        mkTx(optEls,x+PAD+28,iy+24,8,T.t1,desc,false)
+        local BW=56; local bx=x+PAD+W-BW-8; local by=iy+(O_ROW-18)/2
+        mkSq(optEls,bx,by,BW,18,col,true,3)
+        mkTx(optEls,bx+BW/2,by+4,8,T.wht,bl or "RUN",true)
+        table.insert(optBtn,{x=bx,y=by,w=BW,h=18}); iy+=O_ROW+O_GAP
     end
 
-    -- TOGGLES section
+    -- TOGGLES
     secBar("TOGGLES")
 
     togRow(T.tele,"DiedTP","Auto-return to death location on respawn",F.diedTp)
     optTog[#optTog].fn=function()
         F.diedTp=not F.diedTp
         if F.diedTp then F.dLastPos=nil;F.dDeathPos=nil;F.dWasDead=false;F.dWasAlive=true;F.dCooldown=0 end
+        Settings.diedTp=F.diedTp; saveAll()
         if F.diedTp then notify("DiedTP ON") else notify("DiedTP OFF") end
     end
 
-    togRow(T.vis,"Third Person","Force 3rd-person camera (bypasses FP locks)",F.thirdP)
+    togRow(T.vis,"Third Person","Force 3rd-person (bypasses FP locks)",F.thirdP)
     optTog[#optTog].fn=function()
         F.thirdP=not F.thirdP
         if not F.thirdP then pcall(function()
             local cam=workspace.CurrentCamera; local mc=LocalPlayer.Character
             if cam and mc then local h=mc:FindFirstChildOfClass("Humanoid"); if h then cam.CameraSubject=h end end
         end) end
+        Settings.thirdP=F.thirdP; saveAll()
         if F.thirdP then notify("Third Person ON") else notify("Third Person OFF") end
     end
 
@@ -833,13 +762,15 @@ local function drawOpt()
     optTog[#optTog].fn=function()
         F.antiVoid=not F.antiVoid; F.avCooldown=0
         if F.antiVoid then F.avSpawn=nil; getSpawn() end
+        Settings.antiVoid=F.antiVoid; saveAll()
         if F.antiVoid then notify("Anti-Void ON") else notify("Anti-Void OFF") end
     end
 
     togRow(T.util,"Anti-AFK","Prevent AFK kick by simulating activity",F.antiAFK)
     optTog[#optTog].fn=function()
         F.antiAFK=not F.antiAFK
-        if F.antiAFK then enableAntiAFK() else disableAntiAFK() end
+        if F.antiAFK then enableAntiAFK() else F.antiAFK=false end
+        Settings.antiAFK=F.antiAFK; saveAll()
         if F.antiAFK then notify("Anti-AFK ON") else notify("Anti-AFK OFF") end
     end
 
@@ -847,127 +778,130 @@ local function drawOpt()
     optTog[#optTog].fn=function()
         F.instantInt=not F.instantInt
         if F.instantInt then enableInstantInteract() else disableInstantInteract() end
+        Settings.instantInt=F.instantInt; saveAll()
     end
 
-    -- FLING CONFIG section
+    -- FLING CONFIG
     secBar("FLING CONFIG")
 
     togRow(T.err,"Spam Fling","Auto-fling last FLING target repeatedly",F.spamFling)
     optTog[#optTog].fn=function()
         F.spamFling=not F.spamFling; F.spamLast=os.clock()
+        Settings.spamFling=F.spamFling; saveAll()
         if F.spamFling then notify("Spam fling ON") else notify("Spam fling OFF") end
     end
 
     togRow(T.warn,"Sustained","Longer fling for fall-damage maps",F.sustained)
     optTog[#optTog].fn=function()
         F.sustained=not F.sustained
+        Settings.sustained=F.sustained; saveAll()
         if F.sustained then notify("Sustained ON") else notify("Sustained OFF") end
     end
 
-    -- Interval row
+    -- interval row
     do
-        mkSq(optEls,x+PAD,iy,W,O_ROW,T.bg3,true,6)
+        mkSq(optEls,x+PAD,iy,W,O_ROW,T.bg3,true,5)
         mkSq(optEls,x+PAD,iy,IR,O_ROW,T.warn,true,2)
-        mkTx(optEls,x+PAD+30,iy+10,12,T.t0,"Spam Interval",false)
-        mkTx(optEls,x+PAD+30,iy+26,9,T.t1,"Seconds between auto-flings",false)
-        local mb=x+PAD+W-118; local bby=iy+(O_ROW-20)/2
-        mkSq(optEls,mb,   bby,28,20,T.bg4,true,4)
-        mkTx(optEls,mb+14,bby+4,13,T.warn,"-",true)
-        table.insert(optBtn,{x=mb,y=bby,w=28,h=20})
-        optBtn[#optBtn].fn=function() F.spamDelay=math.max(0.5,F.spamDelay-0.5); notify("Interval: "..string.format("%.1f",F.spamDelay).."s"); drawOpt() end
-        mkSq(optEls,mb+32,bby,46,20,T.bg2,true,4)
-        mkTx(optEls,mb+55,bby+5,10,T.t0,string.format("%.1f",F.spamDelay).."s",true)
-        local pb=mb+82
-        mkSq(optEls,pb,   bby,28,20,T.bg4,true,4)
-        mkTx(optEls,pb+14,bby+4,13,T.ok,"+",true)
-        table.insert(optBtn,{x=pb,y=bby,w=28,h=20})
-        optBtn[#optBtn].fn=function() F.spamDelay=math.min(60,F.spamDelay+0.5); notify("Interval: "..string.format("%.1f",F.spamDelay).."s"); drawOpt() end
+        mkTx(optEls,x+PAD+28,iy+9,11,T.t0,"Spam Interval",false)
+        mkTx(optEls,x+PAD+28,iy+24,8,T.t1,"Seconds between auto-flings",false)
+        local mb=x+PAD+W-112; local bby=iy+(O_ROW-18)/2
+        mkSq(optEls,mb,   bby,26,18,T.bg4,true,3); mkTx(optEls,mb+13,bby+3,12,T.warn,"-",true)
+        table.insert(optBtn,{x=mb,y=bby,w=26,h=18})
+        optBtn[#optBtn].fn=function() F.spamDelay=math.max(0.5,F.spamDelay-0.5); Settings.spamDelay=F.spamDelay; saveAll(); notify("Interval: "..string.format("%.1f",F.spamDelay).."s"); drawOpt() end
+        mkSq(optEls,mb+30,bby,42,18,T.bg2,true,3); mkTx(optEls,mb+51,bby+4,9,T.t0,string.format("%.1f",F.spamDelay).."s",true)
+        local pb=mb+76
+        mkSq(optEls,pb,   bby,26,18,T.bg4,true,3); mkTx(optEls,pb+13,bby+3,12,T.ok,"+",true)
+        table.insert(optBtn,{x=pb,y=bby,w=26,h=18})
+        optBtn[#optBtn].fn=function() F.spamDelay=math.min(60,F.spamDelay+0.5); Settings.spamDelay=F.spamDelay; saveAll(); notify("Interval: "..string.format("%.1f",F.spamDelay).."s"); drawOpt() end
         iy+=O_ROW+O_GAP
     end
 
-    -- ACTIONS section
+    -- ACTIONS
     secBar("ACTIONS")
 
     btnRow(T.err,"Force Reset","Kill character, bypassing reset-lock","RESET")
     optBtn[#optBtn].fn=function() doForceReset() end
-
-    btnRow(T.util,"Copy My User ID","Copies your UserId to clipboard","COPY")
-    optBtn[#optBtn].fn=function() copyUID(nil) end
 
     btnRow(T.move,"Server Info","Show current server details","OPEN")
     optBtn[#optBtn].fn=function()
         if siOpen then siOpen=false; clearSI() else siOpen=true; drawSI() end
     end
 
-    btnRow(T.accS,"Customize Theme","Change accent and background","OPEN")
+    btnRow(T.accS,"Customize Theme","Change accent colour and background","OPEN")
     optBtn[#optBtn].fn=function()
         if thmOpen then thmOpen=false; clearThm() else thmOpen=true; drawThm() end
     end
-end
 
--- =============================================================
--- ICON BUTTON (minimized state) - DrawingImmediate
--- =============================================================
-local function initIcon()
-    if iconInit then return end
-    local vpx,vpy = getVP()
-    iconX = vpx - ICO_W - 14
-    iconY = vpy - ICO_H - 14
-    iconInit = true
-end
-
-local function drawIcon()
-    local ix,iy = iconX, iconY
-    local hov = inR(mx,my,ix,iy,ICO_W,ICO_H)
-    -- shadow
-    fR(ix+3,iy+3,ICO_W,ICO_H,T.blk,0.35)
-    -- body
-    fR(ix,iy,ICO_W,ICO_H,hov and T.bg3 or T.bg2)
-    sR(ix,iy,ICO_W,ICO_H,hov and T.acc or T.brdr,0.8,1)
-    -- accent top edge
-    fR(ix,iy,ICO_W,2,T.acc)
-    -- "S" letter centered
-    tx(ix+ICO_W/2, iy+ICO_H/2-8, 14, T.acc, "S", true)
-    -- tiny dot grid (decorative)
-    local dotC = hov and T.accS or T.t2
-    for di=0,2 do
-        fR(ix+8+di*5, iy+ICO_H-10, 2, 2, dotC)
+    btnRow(T.util,"Save Settings","Save all feature states and positions","SAVE")
+    optBtn[#optBtn].fn=function()
+        Settings.pX=pX; Settings.pY=pY
+        Settings.optX=optX; Settings.optY=optY
+        Settings.thmX=thmX; Settings.thmY=thmY
+        Settings.iconX=iconX; Settings.iconY=iconY
+        Settings.sortMode=sortMode
+        saveAll(); notify("Settings saved")
     end
 end
 
--- =============================================================
--- MAIN PANEL (DrawingImmediate)
--- =============================================================
+-- ============================================================
+-- ICON BUTTON
+-- ============================================================
+local function initIcon()
+    if iconInit then return end
+    local vpx,vpy=getVP()
+    if iconX==-1 or iconX==0 then iconX=vpx-ICO_W-14 end
+    if iconY==-1 or iconY==0 then iconY=vpy-ICO_H-14 end
+    iconInit=true
+end
+
+local function drawIcon()
+    local ix,iy=iconX,iconY
+    local hov=inR(mx,my,ix,iy,ICO_W,ICO_H)
+    fR(ix+3,iy+3,ICO_W,ICO_H,T.blk,0.3)
+    fR(ix,iy,ICO_W,ICO_H,hov and T.bg4 or T.bg2)
+    sR(ix,iy,ICO_W,ICO_H,hov and T.acc or T.brdr,0.9,1)
+    -- top accent bar
+    fR(ix,iy,ICO_W,2,hov and T.acc or T.accD)
+    tx(ix+ICO_W/2,iy+ICO_H/2-7,13,T.acc,"S",true)
+    -- active indicator dots
+    local anyOn=F.diedTp or F.thirdP or F.antiVoid or F.antiAFK or F.instantInt or F.spamFling
+    if anyOn then
+        fR(ix+ICO_W-9,iy+4,6,6,T.ok)
+    end
+end
+
+-- ============================================================
+-- MAIN PANEL
+-- ============================================================
 local function drawHdr()
     fR(pX,pY,PW,HDR_H,T.bg2)
     fR(pX,pY+HDR_H-1,PW,1,T.line)
     fR(pX,pY,IR,HDR_H,T.acc)
-    tx(pX+26,pY+HDR_H/2-8,13,T.acc,"S",true)
-    tx(pX+46,pY+15,14,T.t0,"SEVERE",false)
-    tx(pX+102,pY+15,14,T.t2,"PLAYERS",false)
-    tx(pX+46,pY+31,9,T.t2,tostring(#list-1).." in session",false)
-    if fPhase ~= "idle" then
-        local lbl = fPhase=="fling" and ("fling "..fFrames.."f") or ("return "..fFrames.."f")
-        tx(pX+PW/2,pY+31,9,T.err,lbl,true)
+    tx(pX+24,pY+HDR_H/2-7,12,T.acc,"S",true)
+    tx(pX+42,pY+14,13,T.t0,"SEVERE",false)
+    tx(pX+96,pY+14,13,T.t2,"PLAYERS",false)
+    tx(pX+42,pY+29,8,T.t2,tostring(#list-1).." in session",false)
+    if fPhase~="idle" then
+        tx(pX+PW/2,pY+29,8,T.err,(fPhase=="fling" and "fling" or "return").." "..fFrames.."f",true)
     end
-
-    -- OPT button
-    local obx=pX+PW-BTN_W*2-14; local oby=pY+(HDR_H-BTN_H)/2
+    -- OPT
+    local obx=pX+PW-BTN_W*2-12; local oby=pY+(HDR_H-BTN_H)/2
     local obH=inR(mx,my,obx,oby,BTN_W,BTN_H)
     fR(obx,oby,BTN_W,BTN_H,obH and T.acc or T.bg4)
-    sR(obx,oby,BTN_W,BTN_H,T.brdr,0.5,1)
-    tx(obx+BTN_W/2,oby+BTN_H/2-6,11,obH and T.wht or T.t1,"OPT",true)
-
-    -- close (minimizes to icon)
-    local clX=pX+PW-BTN_H-6; local clY=pY+(HDR_H-BTN_H)/2
+    sR(obx,oby,BTN_W,BTN_H,T.brdr,0.45,1)
+    tx(obx+BTN_W/2,oby+BTN_H/2-5,10,obH and T.wht or T.t1,"OPT",true)
+    -- minimize to icon
+    local clX=pX+PW-BTN_H-5; local clY=pY+(HDR_H-BTN_H)/2
     local clH=inR(mx,my,clX,clY,BTN_H,BTN_H)
     fR(clX,clY,BTN_H,BTN_H,clH and T.err or T.bg4)
-    sR(clX,clY,BTN_H,BTN_H,T.brdr,0.5,1)
-    tx(clX+BTN_H/2,clY+BTN_H/2-6,11,T.t0,"_",true)
+    sR(clX,clY,BTN_H,BTN_H,T.brdr,0.45,1)
+    tx(clX+BTN_H/2,clY+BTN_H/2-5,10,T.t0,"_",true)
 end
 
 local function drawPanel()
-    local ph = panelH()
+    local ph=panelH()
+    -- subtle drop shadow
+    fR(pX+3,pY+3,PW,ph,T.blk,0.25)
     fR(pX-1,pY-1,PW+2,ph+2,T.brdr)
     fR(pX,pY,PW,ph,T.bg1)
     fR(pX,pY,IR,ph,T.acc)
@@ -975,130 +909,114 @@ local function drawPanel()
 
     -- toolbar
     local ty=pY+HDR_H
-    fR(pX,ty,PW,TOOL_H,T.bg2)
-    fR(pX,ty+TOOL_H-1,PW,1,T.line)
-    fR(pX,ty,IR,TOOL_H,T.acc)
-    local sy=ty+(TOOL_H-20)/2; local sH=inR(mx,my,pX+PAD,sy,76,20)
-    fR(pX+PAD,sy,76,20,sH and T.accD or T.bg4)
-    sR(pX+PAD,sy,76,20,T.brdr,0.4,1)
-    tx(pX+PAD+5,sy+4,9,T.t2,"SORT",false)
-    tx(pX+PAD+38,sy+4,9,T.t0,sortMode==0 and "NAME" or "DIST",false)
-    tx(pX+PW/2,ty+(TOOL_H-9)/2,9,T.t2,#list.." players",true)
+    fR(pX,ty,PW,TOOL_H,T.bg2); fR(pX,ty+TOOL_H-1,PW,1,T.line); fR(pX,ty,IR,TOOL_H,T.acc)
+    local sy=ty+(TOOL_H-18)/2; local sH=inR(mx,my,pX+PAD,sy,72,18)
+    fR(pX+PAD,sy,72,18,sH and T.accD or T.bg4); sR(pX+PAD,sy,72,18,T.brdr,0.35,1)
+    tx(pX+PAD+4,sy+4,8,T.t2,"SORT",false); tx(pX+PAD+36,sy+4,8,T.t0,sortMode==0 and "NAME" or "DIST",false)
+    tx(pX+PW/2,ty+(TOOL_H-8)/2,8,T.t2,#list.." players",true)
 
     -- rows
-    local total=   #list
-    local maxPg=   math.max(0,math.ceil(total/PAGE)-1)
-    pageIdx=       clamp(pageIdx,0,maxPg)
-    local pStart=  pageIdx*PAGE+1
-    local pEnd=    math.min(pStart+PAGE-1,total)
-    local pCount=  pEnd-pStart+1
+    local total=#list; local maxPg=math.max(0,math.ceil(total/PAGE)-1)
+    pageIdx=clamp(pageIdx,0,maxPg)
+    local pStart=pageIdx*PAGE+1; local pEnd=math.min(pStart+PAGE-1,total); local pCount=pEnd-pStart+1
     local b1X=pX+RB1_OFF; local b2X=b1X+RBW+RBG; local b3X=b2X+RBW+RBG
 
     for i=1,PAGE do
         local ry=rowY(i)
         local base=(i%2==0) and T.bg3 or T.bg1
         fR(pX,ry,PW,ROW_H,base); fR(pX,ry+ROW_H-1,PW,1,T.line)
-        if i>pCount then tx(pX+PAD+4,ry+ROW_H/2-5,9,T.line,"--",false); continue end
+        if i>pCount then tx(pX+PAD+3,ry+ROW_H/2-4,8,T.line,"--",false); continue end
         local pi=pStart+i-1; local p=list[pi]
         local isL=p==LocalPlayer; local isSp=specP==p
         local isFT=fTarget==p.Name and fPhase~="idle"
         local isHv=inR(mx,my,pX,ry,PW,ROW_H) and not isL
         local bg=base
-        if isFT  then bg=Color3.fromRGB(34,10,10) end
-        if isSp  then bg=Color3.fromRGB(10,28,20) end
+        if isFT  then bg=Color3.fromRGB(32,9,9) end
+        if isSp  then bg=Color3.fromRGB(9,26,18) end
         if isHv  then bg=T.bg4 end
         fR(pX,ry,PW,ROW_H,bg); fR(pX,ry+ROW_H-1,PW,1,T.line)
         fR(pX,ry,IR,ROW_H,isFT and T.err or (isSp and T.ok or (isL and T.acc or T.bg2)))
-        tx(pX+8,ry+ROW_H/2-5,8,T.t2,string.format("%02d",pi),false)
-        local name=p.DisplayName or p.Name
-        if #name>12 then name=name:sub(1,10)..".." end
-        tx(pX+30,ry+8,12,isFT and T.err or (isSp and T.ok or (isL and T.accS or T.t0)),name,false)
+        tx(pX+7,ry+ROW_H/2-4,7,T.t2,string.format("%02d",pi),false)
+        local name=p.DisplayName or p.Name; if #name>12 then name=name:sub(1,10)..".." end
+        tx(pX+28,ry+7,11,isFT and T.err or (isSp and T.ok or (isL and T.accS or T.t0)),name,false)
         if isL then
-            tx(pX+30,ry+24,9,T.acc,"YOU",false)
+            tx(pX+28,ry+22,8,T.acc,"YOU",false)
         else
-            local hp,mxhp=getHP(p)
-            local pct=clamp(hp/math.max(mxhp,1),0,1)
+            local hp,mxhp=getHP(p); local pct=clamp(hp/math.max(mxhp,1),0,1)
             local hc=pct>.6 and T.ok or (pct>.3 and T.warn or T.err)
-            fR(pX+30,ry+26,100,3,T.bg4); fR(pX+30,ry+26,math.floor(100*pct),3,hc)
-            local d=distTo(p)
-            local ds=d==math.huge and "?" or (d>9999 and ">9k" or math.floor(d).."m")
-            tx(pX+138,ry+24,9,d<20 and T.warn or T.t2,ds,false)
+            fR(pX+28,ry+24,96,2,T.bg4); fR(pX+28,ry+24,math.floor(96*pct),2,hc)
+            local d=distTo(p); local ds=d==math.huge and "?" or (d>9999 and ">9k" or math.floor(d).."m")
+            tx(pX+132,ry+22,8,d<20 and T.warn or T.t2,ds,false)
         end
         if not isL then
             local by2=ry+(ROW_H-BTN_H)/2; local busy=fPhase~="idle"
-            -- TP
             local tpH=inR(mx,my,b1X,by2,RBW,BTN_H)
-            fR(b1X,by2,RBW,BTN_H,tpH and T.acc or T.accD); sR(b1X,by2,RBW,BTN_H,T.brdr,0.35,1)
-            tx(b1X+RBW/2,by2+BTN_H/2-6,10,T.wht,"TP",true)
-            -- FLING
+            fR(b1X,by2,RBW,BTN_H,tpH and T.acc or T.accD); sR(b1X,by2,RBW,BTN_H,T.brdr,0.3,1)
+            tx(b1X+RBW/2,by2+BTN_H/2-5,9,T.wht,"TP",true)
             local flH=inR(mx,my,b2X,by2,RBW,BTN_H) and not busy
-            local flBg=isFT and T.err or (busy and T.bg4 or (flH and T.err or Color3.fromRGB(175,32,48)))
-            fR(b2X,by2,RBW,BTN_H,flBg); sR(b2X,by2,RBW,BTN_H,T.brdr,0.35,1)
-            tx(b2X+RBW/2,by2+BTN_H/2-6,9,busy and T.t2 or T.wht,isFT and "..." or "FLING",true)
-            -- SPEC
+            local flBg=isFT and T.err or (busy and T.bg4 or (flH and T.err or Color3.fromRGB(170,30,46)))
+            fR(b2X,by2,RBW,BTN_H,flBg); sR(b2X,by2,RBW,BTN_H,T.brdr,0.3,1)
+            tx(b2X+RBW/2,by2+BTN_H/2-5,8,busy and T.t2 or T.wht,isFT and "..." or "FLING",true)
             local spH=inR(mx,my,b3X,by2,RBW,BTN_H)
-            local spBg=isSp and (spH and T.err or Color3.fromRGB(155,40,40)) or (spH and T.ok or Color3.fromRGB(36,140,88))
-            fR(b3X,by2,RBW,BTN_H,spBg); sR(b3X,by2,RBW,BTN_H,T.brdr,0.35,1)
-            tx(b3X+RBW/2,by2+BTN_H/2-6,9,T.wht,isSp and "STOP" or "SPEC",true)
+            local spBg=isSp and (spH and T.err or Color3.fromRGB(148,38,38)) or (spH and T.ok or Color3.fromRGB(33,134,84))
+            fR(b3X,by2,RBW,BTN_H,spBg); sR(b3X,by2,RBW,BTN_H,T.brdr,0.3,1)
+            tx(b3X+RBW/2,by2+BTN_H/2-5,8,T.wht,isSp and "STOP" or "SPEC",true)
         end
     end
 
     -- footer
     local fy=pY+ph-FOOT_H
     fR(pX,fy,PW,FOOT_H,T.bg2); fR(pX,fy,PW,1,T.line)
-    local fRail = specP and T.ok or ((F.diedTp or F.thirdP or F.spamFling or F.antiVoid or F.antiAFK or F.instantInt) and T.acc or T.bg4)
-    fR(pX,fy,IR,FOOT_H,fRail)
-    local chipX=pX+PAD+4
+    local anyActive=specP or F.diedTp or F.thirdP or F.spamFling or F.sustained or F.antiVoid or F.antiAFK or F.instantInt
+    fR(pX,fy,IR,FOOT_H,anyActive and (specP and T.ok or T.acc) or T.bg4)
+    local chipX=pX+PAD+3
     local function chip(col,label)
-        local w=6+(#label)*7
-        fR(chipX,fy+(FOOT_H-14)/2,w,14,T.bg4)
-        sR(chipX,fy+(FOOT_H-14)/2,w,14,col,0.4,1)
-        tx(chipX+w/2,fy+(FOOT_H-14)/2+3,9,col,label,true)
-        chipX+=w+4
+        local w=4+(#label)*6+4
+        fR(chipX,fy+(FOOT_H-13)/2,w,13,T.bg4)
+        sR(chipX,fy+(FOOT_H-13)/2,w,13,col,0.45,1)
+        tx(chipX+w/2,fy+(FOOT_H-13)/2+2,8,col,label,true)
+        chipX+=w+3
     end
-    if specP      then chip(T.ok,  "SPEC:"..specP.Name:upper():sub(1,5)) end
-    if F.diedTp   then chip(T.tele,"DIEDTP") end
-    if F.thirdP   then chip(T.vis, "3P") end
-    if F.antiVoid then chip(T.move,"AVOID") end
-    if F.antiAFK  then chip(T.util,"AFK") end
-    if F.instantInt then chip(T.ok,"INTR") end
-    if F.spamFling  then chip(T.err,"SPAM") end
-    if F.sustained  then chip(T.warn,"SUST") end
-    local anyActive = specP or F.diedTp or F.thirdP or F.spamFling or F.sustained or F.antiVoid or F.antiAFK or F.instantInt
-    if not anyActive then tx(pX+PAD+4,fy+(FOOT_H-9)/2,9,T.t2,"IDLE",false) end
+    if specP         then chip(T.ok,  "SPEC:"..specP.Name:upper():sub(1,5)) end
+    if F.diedTp      then chip(T.tele,"DIEDTP") end
+    if F.thirdP      then chip(T.vis, "3P") end
+    if F.antiVoid    then chip(T.move,"AVOID") end
+    if F.antiAFK     then chip(T.util,"AFK") end
+    if F.instantInt  then chip(T.ok,  "INTR") end
+    if F.spamFling   then chip(T.err, "SPAM") end
+    if F.sustained   then chip(T.warn,"SUST") end
+    if not anyActive then tx(pX+PAD+3,fy+(FOOT_H-8)/2,8,T.t2,"IDLE",false) end
 
-    -- page arrows
+    -- paging
     local total2=#list; local maxPg2=math.max(0,math.ceil(total2/PAGE)-1)
-    local prevX=pX+PW-(BTN_H*2)-8; local nextX=pX+PW-BTN_H-4
-    local arBY=fy+(FOOT_H-BTN_H)/2
+    local prevX=pX+PW-(BTN_H*2)-7; local nextX=pX+PW-BTN_H-4; local arBY=fy+(FOOT_H-BTN_H)/2
     local canPrev=pageIdx>0; local canNext=pageIdx<maxPg2
     fR(prevX,arBY,BTN_H,BTN_H,canPrev and (inR(mx,my,prevX,arBY,BTN_H,BTN_H) and T.acc or T.bg4) or T.bg3)
-    sR(prevX,arBY,BTN_H,BTN_H,T.brdr,0.4,1)
-    tx(prevX+BTN_H/2,arBY+BTN_H/2-6,11,canPrev and T.t0 or T.t2,"<",true)
+    sR(prevX,arBY,BTN_H,BTN_H,T.brdr,0.35,1)
+    tx(prevX+BTN_H/2,arBY+BTN_H/2-5,10,canPrev and T.t0 or T.t2,"<",true)
     fR(nextX,arBY,BTN_H,BTN_H,canNext and (inR(mx,my,nextX,arBY,BTN_H,BTN_H) and T.acc or T.bg4) or T.bg3)
-    sR(nextX,arBY,BTN_H,BTN_H,T.brdr,0.4,1)
-    tx(nextX+BTN_H/2,arBY+BTN_H/2-6,11,canNext and T.t0 or T.t2,">",true)
-    tx(pX+PW-(BTN_H*2)-44,fy+(FOOT_H-9)/2,9,T.t2,(pageIdx+1).."/"..(maxPg2+1),false)
+    sR(nextX,arBY,BTN_H,BTN_H,T.brdr,0.35,1)
+    tx(nextX+BTN_H/2,arBY+BTN_H/2-5,10,canNext and T.t0 or T.t2,">",true)
+    tx(pX+PW-(BTN_H*2)-40,fy+(FOOT_H-8)/2,8,T.t2,(pageIdx+1).."/"..(maxPg2+1),false)
 
-    -- spec HUD bar
+    -- spec HUD
     if specP then
-        local vpx,_=getVP(); local hw=300; local hx=vpx/2-hw/2
-        fR(hx,26,hw,22,T.bg2); fR(hx,26,IR,22,T.ok)
-        tx(vpx/2,29,11,T.ok,"SPECTATING  "..specP.Name:upper().."   |   "..math.floor(distTo(specP)).."m",true)
+        local vpx,_=getVP(); local hw=290; local hx=vpx/2-hw/2
+        fR(hx,25,hw,20,T.bg2); fR(hx,25,IR,20,T.ok)
+        tx(vpx/2,28,10,T.ok,"SPECTATING  "..specP.Name:upper().."   |   "..math.floor(distTo(specP)).."m",true)
     end
 end
 
--- =============================================================
+-- ============================================================
 -- INPUT
--- =============================================================
+-- ============================================================
 local function pollMouse()
     local p=UIS:GetMouseLocation(); mx,my=p.X,p.Y
-    local lH=isleftpressed()
-    lClick=lH and not prevL; lRel=not lH and prevL; prevL=lH
+    local lH=isleftpressed(); lClick=lH and not prevL; lRel=not lH and prevL; prevL=lH
 end
 
 local function handleInput()
-    -- icon drag (always active when panel is closed)
+    -- icon mode
     if not panelOpen then
         if lClick and inR(mx,my,iconX,iconY,ICO_W,ICO_H) then
             icoDrag=true; icoDX=mx-iconX; icoDY=my-iconY
@@ -1107,38 +1025,42 @@ local function handleInput()
             local vpx,vpy=getVP()
             iconX=clamp(mx-icoDX,0,vpx-ICO_W); iconY=clamp(my-icoDY,0,vpy-ICO_H)
         end
-        if lRel then
-            -- only open panel if mouse didn't move (i.e. was a click not a drag)
-            if icoDrag and math.abs(mx-(iconX+icoDX))<=3 and math.abs(my-(iconY+icoDY))<=3 then
-                panelOpen=true; icoDrag=false
-            else
-                icoDrag=false
-            end
-        end
-        -- simpler approach: click with no movement = open
-        if lClick and inR(mx,my,iconX,iconY,ICO_W,ICO_H) and not icoDrag then
-            -- handled above via drag start, just in case:
+        if lRel and icoDrag then
+            local moved=math.abs(mx-(iconX+icoDX))>4 or math.abs(my-(iconY+icoDY))>4
+            if not moved then panelOpen=true end
+            icoDrag=false
         end
         return
     end
 
-    -- theme panel
+    -- theme drag
     if thmOpen then
-        if lClick then
+        if lClick and thmHdr and inR(mx,my,thmHdr.x,thmHdr.y,thmHdr.w,thmHdr.h) then
+            thmDrag=true; thmDX=mx-thmX; thmDY=my-thmY
+        end
+        if thmDrag and isleftpressed() then
+            local vpx,vpy=getVP(); local W=420
+            local ra=math.ceil(#AccPre/5); local rb=math.ceil(#BgPre/3)
+            local swH,swG=50,5
+            local H=O_HDR+(O_SEC+12)+ra*(swH+swG)+10+(O_SEC+12)+rb*(swH+swG)+18
+            thmX=clamp(mx-thmDX,0,vpx-W); thmY=clamp(my-thmDY,0,vpy-H)
+            drawThm()
+        end
+        if lRel then thmDrag=false end
+        if lClick and not thmDrag then
             if thmClose and inR(mx,my,thmClose.x,thmClose.y,thmClose.w,thmClose.h) then
-                thmOpen=false; clearThm(); clickCd=0.25; return
+                thmOpen=false; clearThm(); clickCd=0.2; return
             end
             for i,b in ipairs(thmAcc) do
                 if inR(mx,my,b.x,b.y,b.w,b.h) then
                     local p=AccPre[i]; T.acc=p.a; T.accS=p.s; T.accD=p.d
-                    saveTheme(); drawThm(); if optOpen then drawOpt() end; clickCd=0.2; return
+                    saveAll(); drawThm(); if optOpen then drawOpt() end; clickCd=0.15; return
                 end
             end
             for i,b in ipairs(thmBg) do
                 if inR(mx,my,b.x,b.y,b.w,b.h) then
-                    local p=BgPre[i]
-                    T.bg0=p.b0;T.bg1=p.b1;T.bg2=p.b2;T.bg3=p.b3;T.bg4=p.b4;T.line=p.li;T.brdr=p.br
-                    saveTheme(); drawThm(); if optOpen then drawOpt() end; clickCd=0.2; return
+                    local p=BgPre[i]; T.bg0=p.b0;T.bg1=p.b1;T.bg2=p.b2;T.bg3=p.b3;T.bg4=p.b4;T.line=p.li;T.brdr=p.br
+                    saveAll(); drawThm(); if optOpen then drawOpt() end; clickCd=0.15; return
                 end
             end
         end
@@ -1146,11 +1068,21 @@ local function handleInput()
     end
 
     -- server info
-    if siOpen and lClick then
-        if siClose and inR(mx,my,siClose.x,siClose.y,siClose.w,siClose.h) then
-            siOpen=false; clearSI(); clickCd=0.25; return
+    if siOpen then
+        if lClick then
+            if siClose and inR(mx,my,siClose.x,siClose.y,siClose.w,siClose.h) then
+                siOpen=false; clearSI(); clickCd=0.2; return
+            end
+            for _,b in ipairs(siCopyBtns) do
+                if inR(mx,my,b.x,b.y,b.w,b.h) then
+                    pcall(function() setclipboard(b.val) end)
+                    notify(b.lbl..": "..b.val.." (copied)"); clickCd=0.2; return
+                end
+            end
+            if siMain and not inR(mx,my,siMain.x,siMain.y,siMain.w,siMain.h) then
+                siOpen=false; clearSI()
+            end
         end
-        if siMain and not inR(mx,my,siMain.x,siMain.y,siMain.w,siMain.h) then siOpen=false; clearSI() end
     end
 
     -- options drag
@@ -1161,95 +1093,94 @@ local function handleInput()
         if optDrag and isleftpressed() then
             local vpx,vpy=getVP(); optX=clamp(mx-optDX,0,vpx-OW); optY=clamp(my-optDY,0,vpy-OH); drawOpt()
         end
-        if lRel then optDrag=false end
+        if lRel then
+            if optDrag then Settings.optX=optX; Settings.optY=optY end
+            optDrag=false
+        end
         if lClick and not optDrag then
             if optClose and inR(mx,my,optClose.x,optClose.y,optClose.w,optClose.h) then
-                optOpen=false; clearOpt(); clickCd=0.25; return
+                optOpen=false; clearOpt(); clickCd=0.2; return
             end
             for _,tb in ipairs(optTog) do
-                if inR(mx,my,tb.x,tb.y,tb.w,tb.h) then tb.fn(); drawOpt(); clickCd=0.25; return end
+                if inR(mx,my,tb.x,tb.y,tb.w,tb.h) then tb.fn(); drawOpt(); clickCd=0.2; return end
             end
             for _,bb in ipairs(optBtn) do
-                if inR(mx,my,bb.x,bb.y,bb.w,bb.h) then bb.fn(); clickCd=0.3; return end
+                if inR(mx,my,bb.x,bb.y,bb.w,bb.h) then bb.fn(); clickCd=0.25; return end
             end
         end
         if lClick then return end
     end
 
-    local ph = panelH()
-
-    -- main panel drag (header area, avoiding buttons on right)
-    local dW=PW-(BTN_H*2)-BTN_W-20
-    if lClick and inR(mx,my,pX,pY,dW,HDR_H) then
-        dragPh=1; dragOX=mx-pX; dragOY=my-pY
-    end
-    if dragPh==1 then
-        if math.abs(mx-(pX+dragOX))>2 or math.abs(my-(pY+dragOY))>2 then dragPh=2 end
-    end
+    local ph=panelH()
+    -- main drag
+    local dW=PW-(BTN_H*2)-BTN_W-18
+    if lClick and inR(mx,my,pX,pY,dW,HDR_H) then dragPh=1; dragOX=mx-pX; dragOY=my-pY end
+    if dragPh==1 then if math.abs(mx-(pX+dragOX))>2 or math.abs(my-(pY+dragOY))>2 then dragPh=2 end end
     if dragPh==2 and isleftpressed() then
-        local vpx,vpy=getVP()
-        pX=clamp(mx-dragOX,0,vpx-PW); pY=clamp(my-dragOY,0,vpy-60); return
+        local vpx,vpy=getVP(); pX=clamp(mx-dragOX,0,vpx-PW); pY=clamp(my-dragOY,0,vpy-60); return
     end
-    if lRel then dragPh=0 end
+    if lRel then
+        if dragPh==2 then Settings.pX=pX; Settings.pY=pY end
+        dragPh=0
+    end
 
     if not inR(mx,my,pX,pY,PW,ph) then return end
     if not lClick then return end
-    if clickCd > 0 then return end
+    if clickCd>0 then return end
 
     -- OPT
-    local obx=pX+PW-BTN_W*2-14; local oby=pY+(HDR_H-BTN_H)/2
+    local obx=pX+PW-BTN_W*2-12; local oby=pY+(HDR_H-BTN_H)/2
     if inR(mx,my,obx,oby,BTN_W,BTN_H) then
-        if optOpen then optOpen=false; clearOpt() else optOpen=true; optX=0; drawOpt() end
-        clickCd=0.25; return
+        if optOpen then optOpen=false; clearOpt() else optOpen=true; drawOpt() end
+        clickCd=0.2; return
     end
-
-    -- close (minimize to icon)
-    local clX=pX+PW-BTN_H-6; local clY=pY+(HDR_H-BTN_H)/2
+    -- minimize to icon
+    local clX=pX+PW-BTN_H-5; local clY=pY+(HDR_H-BTN_H)/2
     if inR(mx,my,clX,clY,BTN_H,BTN_H) then
         panelOpen=false
         if optOpen then optOpen=false; clearOpt() end
         if siOpen  then siOpen=false;  clearSI()  end
         if thmOpen then thmOpen=false; clearThm() end
-        clickCd=0.4; return
+        clickCd=0.3; return
     end
-
     -- sort
-    local sy2=pY+HDR_H+(TOOL_H-20)/2
-    if inR(mx,my,pX+PAD,sy2,76,20) then sortMode=(sortMode+1)%2; clickCd=0.25; return end
-
+    local sy2=pY+HDR_H+(TOOL_H-18)/2
+    if inR(mx,my,pX+PAD,sy2,72,18) then
+        sortMode=(sortMode+1)%2; Settings.sortMode=sortMode; clickCd=0.2; return
+    end
     -- paging
     local fy=pY+panelH()-FOOT_H
-    local prevX=pX+PW-(BTN_H*2)-8; local nextX=pX+PW-BTN_H-4
-    local arBY=fy+(FOOT_H-BTN_H)/2
+    local prevX=pX+PW-(BTN_H*2)-7; local nextX=pX+PW-BTN_H-4; local arBY=fy+(FOOT_H-BTN_H)/2
     local maxPg=math.max(0,math.ceil(#list/PAGE)-1)
-    if inR(mx,my,prevX,arBY,BTN_H,BTN_H) and pageIdx>0 then pageIdx-=1; clickCd=0.15; return end
-    if inR(mx,my,nextX,arBY,BTN_H,BTN_H) and pageIdx<maxPg then pageIdx+=1; clickCd=0.15; return end
-
+    if inR(mx,my,prevX,arBY,BTN_H,BTN_H) and pageIdx>0 then pageIdx-=1; clickCd=0.12; return end
+    if inR(mx,my,nextX,arBY,BTN_H,BTN_H) and pageIdx<maxPg then pageIdx+=1; clickCd=0.12; return end
     -- row buttons
     local b1X=pX+RB1_OFF; local b2X=b1X+RBW+RBG; local b3X=b2X+RBW+RBG
     local pSt=pageIdx*PAGE+1; local pEn=math.min(pSt+PAGE-1,#list)
     for slot=1,pEn-pSt+1 do
-        local p=list[pSt+slot-1]
-        if p==LocalPlayer then continue end
+        local p=list[pSt+slot-1]; if p==LocalPlayer then continue end
         local ry=rowY(slot); local by2=ry+(ROW_H-BTN_H)/2
-        if inR(mx,my,b1X,by2,RBW,BTN_H) then teleportTo(p); clickCd=0.4; return end
-        if inR(mx,my,b2X,by2,RBW,BTN_H) then F.spamTarget=p.Name; startFling(p.Name); clickCd=0.4; return end
+        if inR(mx,my,b1X,by2,RBW,BTN_H) then teleportTo(p); clickCd=0.35; return end
+        if inR(mx,my,b2X,by2,RBW,BTN_H) then F.spamTarget=p.Name; startFling(p.Name); clickCd=0.35; return end
         if inR(mx,my,b3X,by2,RBW,BTN_H) then
-            if specP==p then stopSpec() else startSpec(p) end; clickCd=0.4; return
+            if specP==p then stopSpec() else startSpec(p) end; clickCd=0.35; return
         end
-        if inR(mx,my,pX+30,ry,b1X-pX-34,ROW_H) then copyUID(p); clickCd=0.35; return end
+        -- name click = copy uid
+        if inR(mx,my,pX+28,ry,b1X-pX-32,ROW_H) then
+            pcall(function() setclipboard(tostring(p.UserId)) end)
+            notify(p.Name.." UID: "..tostring(p.UserId).." (copied)"); clickCd=0.3; return
+        end
     end
 end
 
--- =============================================================
--- POSTLOCAL - fling physics
--- =============================================================
-if _G.SPV5_Post then pcall(function() _G.SPV5_Post:Disconnect() end) end
-_G.SPV5_Post = RunService.PostLocal:Connect(function()
+-- ============================================================
+-- POSTLOCAL
+-- ============================================================
+if _G.SPV6_Post then pcall(function() _G.SPV6_Post:Disconnect() end) end
+_G.SPV6_Post=RunService.PostLocal:Connect(function()
     pcall(function()
         if fPhase=="idle" then return end
-        local myHRP=getHRP()
-        if not myHRP then fPhase="idle"; fFrames=0; return end
+        local myHRP=getHRP(); if not myHRP then fPhase="idle"; fFrames=0; return end
         if fPhase=="fling" then
             local tgt=findP(fTarget)
             local thrp=tgt and tgt.Character and tgt.Character:FindFirstChild("HumanoidRootPart")
@@ -1266,49 +1197,52 @@ _G.SPV5_Post = RunService.PostLocal:Connect(function()
             fFrames-=1; if fFrames<=0 then fPhase="return"; fFrames=F_RF end; return
         end
         if fPhase=="return" then
-            if fSaved then
-                pcall(function()
-                    myHRP.CFrame=CFrame.new(fSaved.x,fSaved.y,fSaved.z)
-                    myHRP.Velocity=Vector3.new(0,0,0); myHRP.RotVelocity=Vector3.new(0,0,0)
-                end)
-            end
+            if fSaved then pcall(function()
+                myHRP.CFrame=CFrame.new(fSaved.x,fSaved.y,fSaved.z)
+                myHRP.Velocity=Vector3.new(0,0,0); myHRP.RotVelocity=Vector3.new(0,0,0)
+            end) end
             fFrames-=1; if fFrames<=0 then fPhase="idle"; fSaved=nil end
         end
     end)
 end)
 
--- =============================================================
+-- ============================================================
 -- MAIN LOOP
--- =============================================================
+-- ============================================================
 local checkT=0; local optRdT=0
 
 RunService.Render:Connect(function(dt)
     pollMouse()
     if clickCd>0 then clickCd-=dt end
-
-    tickDiedTP(dt)
-    tickThirdP()
-    tickTP()
-    tickSpam()
-    tickAntiVoid(dt)
-
+    tickDiedTP(dt); tickThirdP(); tickTP(); tickSpam(); tickAntiVoid(dt)
     if not panelOpen then
-        initIcon()
-        drawIcon()
-        pcall(handleInput)
-        return
+        initIcon(); drawIcon(); pcall(handleInput); return
     end
-
     buildList()
     checkT+=dt; if checkT>=0.5 then checkT=0; checkSpec() end
     if optOpen then optRdT+=dt; if optRdT>=0.3 then optRdT=0; drawOpt() end end
-    pcall(handleInput)
-    pcall(drawPanel)
+    pcall(handleInput); pcall(drawPanel)
 end)
 
--- =============================================================
+-- ============================================================
 -- INIT
--- =============================================================
-loadTheme()
+-- ============================================================
+loadAll()
+pX=Settings.pX; pY=Settings.pY
+if Settings.iconX > 0 then iconX=Settings.iconX end
+if Settings.iconY > 0 then iconY=Settings.iconY end
+optX=Settings.optX; optY=Settings.optY
+thmX=Settings.thmX; thmY=Settings.thmY
+sortMode=Settings.sortMode
+F.diedTp=Settings.diedTp; F.thirdP=Settings.thirdP
+F.antiVoid=Settings.antiVoid; F.antiAFK=Settings.antiAFK
+F.instantInt=Settings.instantInt; F.spamFling=Settings.spamFling
+F.sustained=Settings.sustained; F.spamDelay=Settings.spamDelay
+
+-- re-enable persistent features that were on
+if F.antiAFK then enableAntiAFK() end
+if F.instantInt then enableInstantInteract() end
+if F.antiVoid then F.avSpawn=nil; getSpawn() end
+
 buildList()
-notify("Severe Player Panel v5 ready")
+notify("Severe Player Panel v6 ready")
